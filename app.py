@@ -6,6 +6,31 @@ import datetime
 # 画面設定
 st.set_page_config(page_title="室戸岬 だるま夕日シミュレーター", page_icon="🌅", layout="wide")
 
+# ==========================================
+# 🎨 カスタムCSS：スライダーをグラフィカルに装飾
+# ==========================================
+st.markdown("""
+<style>
+/* 条件1：温度差スライダー（青 ➔ 赤 のグラデーション） */
+div[data-testid="stTabContent"] div[data-testid="stSlider"]:nth-of-type(1) div[data-baseweb="slider"] > div {
+    background: linear-gradient(to right, #2563eb 0%, #3b82f6 30%, #f97316 70%, #dc2626 100%) !important;
+    border-radius: 6px !important;
+}
+
+/* 条件2：雲量スライダー（夕日オレンジ ➔ 曇りグレー のグラデーション） */
+div[data-testid="stTabContent"] div[data-testid="stSlider"]:nth-of-type(3) div[data-baseweb="slider"] > div {
+    background: linear-gradient(to right, #ff5722 0%, #ff9800 35%, #9e9e9e 75%, #546e7a 100%) !important;
+    border-radius: 6px !important;
+}
+
+/* 条件3：風速スライダー（イエロー ➔ グリーン のグラデーション） */
+div[data-testid="stTabContent"] div[data-testid="stSlider"]:nth-of-type(5) div[data-baseweb="slider"] > div {
+    background: linear-gradient(to right, #facc15 0%, #a3e635 50%, #16a34a 100%) !important;
+    border-radius: 6px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🌅 室戸岬 だるま夕日シミュレーター")
 st.caption("気象条件を組み合わせて、だるま夕日が見える日を予測してみよう！")
 
@@ -35,7 +60,7 @@ with tab1:
     # --- ① 温度差 ---
     st.markdown("#### 🌡️ 条件1：海と空気の温度差（下位蜃気楼の条件）")
     st.caption("※温かい海の上に冷たい空気が来ると、光が屈折して「だるま型」に見えます。")
-    threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 7.0, 0.5)
+    threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 8.0, 0.5)
     weight_temp = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=40, key="w_temp")
 
     st.markdown("---")
@@ -48,11 +73,18 @@ with tab1:
 
     st.markdown("---")
 
-    # --- ③ 風の条件 ---
+    # --- ③ 風の条件（1本のスライダーに統合） ---
     st.markdown("#### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、北や北西からの冷たい季節風が吹くと発生しやすくなります。")
-    min_wind = st.slider("最低限必要な風の強さ (m/s)", 0.0, 5.0, 1.5, 0.5)
-    max_wind = st.slider("これ以上強いと波が立ちすぎる風速 (m/s)", 5.0, 20.0, 10.0, 0.5)
+    
+    min_wind, max_wind = st.slider(
+        "適正な風の強さの範囲 (m/s)",
+        min_value=0.0,
+        max_value=20.0,
+        value=(1.0, 9.0),
+        step=0.5,
+        help="※風が弱すぎても温床が作られず、強すぎても波で水平線が崩れてしまいます。"
+    )
     weight_wind = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=20, key="w_wind")
 
     # 配点チェック
@@ -68,7 +100,7 @@ with tab1:
 # ==========================================
 df['温度差'] = df['海水温'] - df['気温']
 
-# ① 温度差：下位蜃気楼の形成臨界点（基準より1.0℃未満になると急速に0点）
+# ① 温度差判定
 temp_margin = 1.0
 df['score_temp'] = np.where(
     df['温度差'] >= threshold_temp,
@@ -76,7 +108,7 @@ df['score_temp'] = np.where(
     np.maximum(0.0, weight_temp * (1.0 - (threshold_temp - df['温度差']) / temp_margin))
 )
 
-# ② 雲量：水平線遮蔽率（基準+5%を超えると視認困難になり急速に0点）
+# ② 雲量判定
 cloud_margin = 5.0
 df['score_clouds'] = np.where(
     df['雲量'] <= threshold_clouds,
@@ -84,7 +116,7 @@ df['score_clouds'] = np.where(
     np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
 )
 
-# ③ 風条件：風速の適正範囲判定
+# ③ 風条件判定
 wind_speed_score = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
     1.0,
@@ -95,7 +127,6 @@ wind_speed_score = np.where(
     )
 )
 
-# 風向の気象学的重み付け（北〜北西以外は蜃気楼が立ちにくいため厳格化）
 wind_direction_multipliers = {
     '北西': 1.0, '北北西': 1.0, '北': 1.0,
     '西北西': 0.6, '北北東': 0.6,
@@ -109,7 +140,7 @@ df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
 # 合計スコア計算
 df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
 
-# 合格判定ライン（92.0点：全条件がハイレベルで揃うこと）
+# 合格判定ライン（92.0点）
 threshold_score = 92.0
 
 if total_weight == 100:
@@ -119,8 +150,6 @@ else:
 
 total_days = len(df)
 predicted_days = int(df['発生予測'].sum())
-
-# 2021年10月〜2025年3月の4シーズン（4年間）データのため 4.0 で割る
 avg_yearly_days = predicted_days / 4.0
 
 # ------------------------------------------
@@ -146,7 +175,6 @@ with tab2:
         st.warning("🔍 条件の基準（スライダー）が初期設定のままのようです。少し絞り込んでみましょう！")
     elif predicted_days == 0:
         st.warning("⚠️ 発生予測が0日になりました。条件が少し厳しすぎるかもしれません。")
-    # 4年間で 20日〜80日（年間 5日〜20日相当）を現実の発生ペースとして適正判定
     elif 20 <= predicted_days <= 80:
         st.success(f"🟢 【素晴らしい！】年間 {avg_yearly_days:.1f} 日の予測です。実際の室戸岬の年間発生数（10〜20回前後）に極めて近いリアルな条件設定です！")
     elif predicted_days < 20:
@@ -156,7 +184,13 @@ with tab2:
 
     st.markdown("---")
     st.markdown("#### 📅 月別の発生予想（4シーズンの合計）")
-    monthly_summary = df.groupby('月')['発生予測'].sum().reset_index().set_index('月')
+    
+    # 10月〜3月（シーズン順）に並べ替え
+    season_months = [10, 11, 12, 1, 2, 3]
+    monthly_data = df.groupby('月')['発生予測'].sum().reindex(season_months, fill_value=0).reset_index()
+    monthly_data['月表示'] = monthly_data['月'].astype(str) + '月'
+    monthly_summary = monthly_data.set_index('月表示')
+    
     st.bar_chart(monthly_summary['発生予測'])
 
 # ------------------------------------------
@@ -172,7 +206,6 @@ with tab3:
         row = target_data.iloc[0]
         st.write(f"**【{date_str} の室戸岬の観測データ】**")
         
-        # メトリクス表示
         col_a, col_b = st.columns(2)
         col_a.metric("気温 / 海水温", f"{row['気温']}℃ / {row['海水温']}℃")
         col_a.metric("温度差", f"{row['温度差']:.1f}℃")
