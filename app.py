@@ -57,7 +57,7 @@ with tab1:
     # 左：合格基準カード
     with col1_temp:
         with st.container(border=True):
-            st.markdown("##### 🎯 合格基準（合格ライン）")
+            st.markdown("##### 🎯 合格基準（条件設定）")
             st.markdown("""
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
                     <span style="color: #60a5fa;">🔵 差が小さい (発生しにくい)</span>
@@ -65,13 +65,14 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
-            threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 5.0, 0.5)
+            # スライダー範囲を 0.0 ℃ 〜 15.0 ℃（初期値 0.0 ℃）に変更
+            threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 0.0, 15.0, 0.0, 0.5)
 
-    # 右：配点カード（初期値 0点に更新）
+    # 右：配点カード（初期値 0点）
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v2")
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v3")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -87,7 +88,7 @@ with tab1:
     # 左：合格基準カード
     with col1_clouds:
         with st.container(border=True):
-            st.markdown("##### 🎯 合格基準（合格ライン）")
+            st.markdown("##### 🎯 合格基準（条件設定）")
             st.markdown("""
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
                     <span style="color: #ff7849;">🌅 0% 快晴 (絶好の夕日)</span>
@@ -97,11 +98,11 @@ with tab1:
             """, unsafe_allow_html=True)
             threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 100, 10)
 
-    # 右：配点カード（初期値 0点に更新）
+    # 右：配点カード（初期値 0点）
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v2")
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v3")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -117,7 +118,7 @@ with tab1:
     # 左：合格基準カード
     with col1_wind:
         with st.container(border=True):
-            st.markdown("##### 🎯 合格基準（合格ライン）")
+            st.markdown("##### 🎯 合格基準（条件設定）")
             st.markdown("""
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
                     <span style="color: #facc15;">🍃 0m/s 無風</span>
@@ -168,11 +169,11 @@ with tab1:
                 if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
                 if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
 
-    # 右：配点カード（初期値 0点に更新） ＋ ヒントコラム
+    # 右：配点カード（初期値 0点） ＋ ヒントコラム
     with col2_wind:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v2")
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v3")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
         with st.container(border=True):
@@ -253,7 +254,7 @@ with tab2:
 
     st.markdown("#### 🤖 AIアドバイザーの判定")
     has_zero_weight = (weight_temp == 0 or weight_clouds == 0 or weight_wind == 0)
-    is_initial_condition = (threshold_temp == 5.0 or threshold_clouds == 100 or min_wind == 0.0 or max_wind == 20.0)
+    is_initial_condition = (threshold_temp == 0.0 or threshold_clouds == 100 or min_wind == 0.0 or max_wind == 20.0)
 
     if total_weight != 100:
         st.info("💡 まずは「① 条件を設定する」タブで、合計配点をぴったり100点にしてみよう！")
