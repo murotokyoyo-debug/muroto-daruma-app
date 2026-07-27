@@ -107,10 +107,10 @@ with tab1:
     st.markdown("---")
 
     # ==========================================
-    # --- ③ 風の条件（風速 ＋ チェックボックス風向 ＋ 解説コラム） ---
+    # --- ③ 風の条件（風速 ＋ チェックボックス風向 ＋ ヒントコラム） ---
     # ==========================================
     st.markdown("### 🌬️ 条件3：風の強さと向き")
-    st.caption("※室戸では、北や北西からの冷たい季節風が吹くと発生しやすくなります。")
+    st.caption("※室戸では、風の向きや強さによって水平線付近の空気の状態が変わります。")
     
     col1_wind, col2_wind = st.columns([7, 3])
     
@@ -170,7 +170,7 @@ with tab1:
                 if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
                 if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
 
-    # 右：配点カード ＋ 解説コラム
+    # 右：配点カード ＋ ヒントコラム（ネタバレ防止版）
     with col2_wind:
         # 配点カード
         with st.container(border=True):
@@ -178,14 +178,14 @@ with tab1:
             weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=20, key="w_wind")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
-        # 💡 風向きコラムカード（空きスペースの活用）
+        # 💡 風向きヒントカード（考える余地を残す構成）
         with st.container(border=True):
-            st.markdown("##### 💡 なぜ「風向き」が大事？")
+            st.markdown("##### 💡 風向きを考えるヒント")
             st.markdown("""
-            * **北〜北西の風（◎チャンス！）**  
-              四国山地を越えて吹く冷たい季節風（陸風）。温かい海との差が広がり、屈折が起きやすくなります！
-            * **南〜東の風（×むずかしい…）**  
-              太平洋から湿った暖かい空気が入るため、雲や霧が出やすく夕日自体が見えにくくなります。
+            * **陸側から吹く風（山越えの風）**  
+              四国山地を越えて届くため、冷たく乾いた空気の層を海の上に作りやすくなります。
+            * **海側から吹く風（沖からの風）**  
+              太平洋から湿った暖かい風が吹き込むため、水蒸気で雲や霧が発生しやすくなります。
             """)
 
     # 配点チェック
