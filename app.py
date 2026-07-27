@@ -4,9 +4,23 @@ import numpy as np
 import datetime
 
 # 画面設定
-st.set_page_config(page_title="室戸岬 だるま夕日シミュレーター", page_icon="🌅", layout="wide")
+st.set_page_config(page_title="室戸だるま夕日シュミレーター", page_icon="🌅", layout="wide")
 
-st.title("🌅 室戸岬 だるま夕日シミュレーター")
+# 🌅 夕日グラデーションタイトルの表示
+st.markdown("""
+    <h1 style="
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #ff4e50 0%, #f9d423 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0px;
+        padding-bottom: 5px;
+    ">
+        🌅 室戸だるま夕日シュミレーター
+    </h1>
+""", unsafe_allow_html=True)
+
 st.caption("気象条件を組み合わせて、だるま夕日が見える日を予測してみよう！")
 
 # データの読み込み
