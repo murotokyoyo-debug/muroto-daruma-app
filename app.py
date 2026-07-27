@@ -91,19 +91,24 @@ df['wind_speed_factor'] = np.where(
              np.maximum(0.0, 1.0 - (df['風速'] - max_wind) / 5.0))
 )
 
+# 💡 風向きの倍率をマイルド化（一発アウトの0.0倍を廃止し、最低でも0.5倍確保）
 wind_direction_multipliers = {
-    '北西': 1.0, '北北西': 1.0, '北': 1.0, '西北西': 0.7, '北北東': 0.7,
-    '西': 0.35, '北東': 0.35, '東北東': 0.0, '東': 0.0, '東南東': 0.0,
-    '南東': 0.0, '南南東': 0.0, '南': 0.0, '南南西': 0.0, '南西': 0.0, '西南西': 0.0
+    '北西': 1.0, '北北西': 1.0, '北': 1.0,
+    '西北西': 0.85, '北北東': 0.85,
+    '西': 0.7, '北東': 0.7,
+    '東北東': 0.5, '東': 0.5, '東南東': 0.5,
+    '南東': 0.5, '南南東': 0.5, '南': 0.5, '南南西': 0.5, '南西': 0.5, '西南西': 0.5
 }
-df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.0)
+df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.5)
 df['score_wind'] = df['wind_speed_factor'] * df['wind_dir_factor'] * weight_wind
 
 # 合計スコア
 df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
 
+# 合格ラインの設定（75点以上で合格）
+threshold_score = 75.0
+
 if total_weight == 100:
-    threshold_score = 80.0
     df['発生予測'] = np.where(df['予測スコア'] >= threshold_score, 1, 0)
 else:
     df['発生予測'] = 0
@@ -120,7 +125,7 @@ avg_yearly_days = predicted_days / 4.0
 with tab2:
     st.subheader("📈 シミュレーション結果")
     
-    # 指標カード表示（期間の補足ヘルプテキスト付き）
+    # 指標カード表示
     m1, m2 = st.columns(2)
     m1.metric("4シーズン合計発生日数", f"{predicted_days} 日", help="データ対象期間：2021年10月1日〜2025年3月31日（10月〜3月×4年分）")
     m2.metric("年間平均", f"{avg_yearly_days:.1f} 日 / 年")
@@ -174,8 +179,8 @@ with tab3:
         if total_weight != 100:
             st.warning("合計配点を100点に設定すると、この日のスコア判定が表示されます。")
         elif row['発生予測'] == 1:
-            st.success(f"🎉 **発生可能性【大】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: 80.0点）")
+            st.success(f"🎉 **発生可能性【大】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
         else:
-            st.error(f"❄️ **発生可能性【低】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: 80.0点）")
+            st.error(f"❄️ **発生可能性【低】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
     else:
         st.warning("この日付のデータはありません。")
