@@ -65,13 +65,15 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
-            threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 8.0, 0.5)
+            # 初期値を最もゆるい 5.0 ℃に設定
+            threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 5.0, 0.5)
 
     # 右：配点カード
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=40, key="w_temp")
+            # 初期値を 0 点に設定
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -95,13 +97,15 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #ff5722, #ff9800, #9e9e9e, #546e7a); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
-            threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 20, 10)
+            # 初期値を最もゆるい 100%（全許可）に設定
+            threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 100, 10)
 
     # 右：配点カード
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=40, key="w_clouds")
+            # 初期値を 0 点に設定
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -127,12 +131,12 @@ with tab1:
                 <div style="height: 8px; background: linear-gradient(to right, #facc15 0%, #a3e635 25%, #16a34a 100%); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
             
-            # ① 風速スライダー
+            # ① 風速スライダー（初期値を全範囲 0.0〜20.0m/s に設定）
             min_wind, max_wind = st.slider(
                 "適正な風の強さの範囲 (m/s)",
                 min_value=0.0,
                 max_value=20.0,
-                value=(1.0, 9.0),
+                value=(0.0, 20.0),
                 step=0.5,
                 help="※風が弱すぎても温床が作られず、強すぎても波で水平線が崩れてしまいます。"
             )
@@ -140,8 +144,8 @@ with tab1:
             st.markdown("---")
             st.markdown("**🧭 合格とする風向きを選択（チェックを入れてね）**")
 
-            # ② 4列レイアウトでチェックボックスを配置
-            default_wind_dirs = ['北', '北北西', '北西', '西北西']
+            # ② 4列レイアウト（初期値は全てチェックなし）
+            default_wind_dirs = []
             selected_wind_dirs = []
 
             wc1, wc2, wc3, wc4 = st.columns(4)
@@ -170,15 +174,16 @@ with tab1:
                 if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
                 if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
 
-    # 右：配点カード ＋ ヒントコラム（ネタバレ防止版）
+    # 右：配点カード ＋ ヒントコラム
     with col2_wind:
         # 配点カード
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=20, key="w_wind")
+            # 初期値を 0 点に設定
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
-        # 💡 風向きヒントカード（考える余地を残す構成）
+        # 💡 風向きヒントカード
         with st.container(border=True):
             st.markdown("##### 💡 風向きを考えるヒント")
             st.markdown("""
