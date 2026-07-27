@@ -6,38 +6,6 @@ import datetime
 # 画面設定
 st.set_page_config(page_title="室戸岬 だるま夕日シミュレーター", page_icon="🌅", layout="wide")
 
-# ==========================================
-# 🎨 カスタムCSS：確実なグラデーション適用
-# ==========================================
-st.markdown("""
-<style>
-/* 共通：スライダーの標準の赤色カバーを透明化し、下地のグラデーションを見せる */
-.slider-temp [data-baseweb="slider"] > div > div,
-.slider-clouds [data-baseweb="slider"] > div > div,
-.slider-wind [data-baseweb="slider"] > div > div {
-    background-color: transparent !important;
-}
-
-/* 条件1（温度差）：青 ➔ 赤 のグラデーション */
-.slider-temp [data-baseweb="slider"] > div {
-    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 30%, #f97316 70%, #dc2626 100%) !important;
-    border-radius: 6px !important;
-}
-
-/* 条件2（雲量）：夕日オレンジ ➔ 曇りグレー のグラデーション */
-.slider-clouds [data-baseweb="slider"] > div {
-    background: linear-gradient(90deg, #ff5722 0%, #ff9800 35%, #9e9e9e 70%, #546e7a 100%) !important;
-    border-radius: 6px !important;
-}
-
-/* 条件3（風速）：イエロー ➔ グリーン のグラデーション */
-.slider-wind [data-baseweb="slider"] > div {
-    background: linear-gradient(90deg, #facc15 0%, #a3e635 50%, #16a34a 100%) !important;
-    border-radius: 6px !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
 st.title("🌅 室戸岬 だるま夕日シミュレーター")
 st.caption("気象条件を組み合わせて、だるま夕日が見える日を予測してみよう！")
 
@@ -67,9 +35,17 @@ with tab1:
     # --- ① 温度差 ---
     st.markdown("#### 🌡️ 条件1：海と空気の温度差（下位蜃気楼の条件）")
     st.caption("※温かい海の上に冷たい空気が来ると、光が屈折して「だるま型」に見えます。")
-    st.markdown('<div class="slider-temp">', unsafe_allow_html=True)
+    
+    # 🎨 温度差グラデーションバー ＋ ラベル
+    st.markdown("""
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;">
+            <span style="color: #60a5fa;">🔵 差が小さい (発生しにくい)</span>
+            <span style="color: #f87171;">🔴 差が大きい (発生しやすい) ➔</span>
+        </div>
+        <div style="height: 10px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 5px; margin-bottom: 12px;"></div>
+    """, unsafe_allow_html=True)
+    
     threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 8.0, 0.5)
-    st.markdown('</div>', unsafe_allow_html=True)
     weight_temp = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=40, key="w_temp")
 
     st.markdown("---")
@@ -77,17 +53,35 @@ with tab1:
     # --- ② 雲量 ---
     st.markdown("#### ☁️ 条件2：空の晴れぐあい（雲の量）")
     st.caption("※夕日が見えるためには、空に雲が少ないことが大切です。")
-    st.markdown('<div class="slider-clouds">', unsafe_allow_html=True)
+    
+    # 🎨 雲量グラデーションバー ＋ ラベル
+    st.markdown("""
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;">
+            <span style="color: #ff7849;">🌅 0% 快晴 (絶好の夕日)</span>
+            <span style="color: #94a3b8;">☁️ 100% 曇り (見えない) ➔</span>
+        </div>
+        <div style="height: 10px; background: linear-gradient(to right, #ff5722, #ff9800, #9e9e9e, #546e7a); border-radius: 5px; margin-bottom: 12px;"></div>
+    """, unsafe_allow_html=True)
+    
     threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 20, 10)
-    st.markdown('</div>', unsafe_allow_html=True)
     weight_clouds = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=40, key="w_clouds")
 
     st.markdown("---")
 
     # --- ③ 風の条件 ---
-    st.markdown("#### 🌬️ 条件3：風の強さと向き")
+    st.markdown("#### 🌬️ 条件3：风の強さと向き")
     st.caption("※室戸では、北や北西からの冷たい季節風が吹くと発生しやすくなります。")
-    st.markdown('<div class="slider-wind">', unsafe_allow_html=True)
+    
+    # 🎨 風速グラデーションバー ＋ ラベル
+    st.markdown("""
+        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;">
+            <span style="color: #facc15;">🍃 0m/s 無風</span>
+            <span style="color: #4ade80;">🍃 5m/s 適風</span>
+            <span style="color: #22c55e;">💨 20m/s 強風 ➔</span>
+        </div>
+        <div style="height: 10px; background: linear-gradient(to right, #facc15 0%, #a3e635 25%, #16a34a 100%); border-radius: 5px; margin-bottom: 12px;"></div>
+    """, unsafe_allow_html=True)
+    
     min_wind, max_wind = st.slider(
         "適正な風の強さの範囲 (m/s)",
         min_value=0.0,
@@ -96,7 +90,6 @@ with tab1:
         step=0.5,
         help="※風が弱すぎても温床が作られず、強すぎても波で水平線が崩れてしまいます。"
     )
-    st.markdown('</div>', unsafe_allow_html=True)
     weight_wind = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=20, key="w_wind")
 
     # 配点チェック
