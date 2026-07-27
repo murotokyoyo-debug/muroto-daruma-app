@@ -107,7 +107,7 @@ with tab1:
     st.markdown("---")
 
     # ==========================================
-    # --- ③ 風の条件（風速 ＋ 風向選択） ---
+    # --- ③ 風の条件（風速 ＋ チェックボックス風向） ---
     # ==========================================
     st.markdown("### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、北や北西からの冷たい季節風が吹くと発生しやすくなります。")
@@ -138,17 +138,37 @@ with tab1:
             )
 
             st.markdown("---")
+            st.markdown("**🧭 合格とする風向きを選択（チェックを入れてね）**")
 
-            # ② 風向マルチセレクト（ポチポチ選べるタグ形式）
-            all_wind_dirs = ['北', '北北西', '北西', '西北西', '西', '西南西', '南西', '南南西', '南', '南南東', '南東', '東南東', '東', '東北東', '北東', '北北東']
+            # ② 4列レイアウトでチェックボックスをきれいに並べる
             default_wind_dirs = ['北', '北北西', '北西', '西北西']
-            
-            selected_wind_dirs = st.multiselect(
-                "🧭 合格とする風向きを選択（複数選べます）",
-                options=all_wind_dirs,
-                default=default_wind_dirs,
-                help="※クリックして風向きを追加・削除できます。"
-            )
+            selected_wind_dirs = []
+
+            wc1, wc2, wc3, wc4 = st.columns(4)
+
+            with wc1:
+                if st.checkbox("北", value=("北" in default_wind_dirs)): selected_wind_dirs.append("北")
+                if st.checkbox("北北西", value=("北北西" in default_wind_dirs)): selected_wind_dirs.append("北北西")
+                if st.checkbox("北西", value=("北西" in default_wind_dirs)): selected_wind_dirs.append("北西")
+                if st.checkbox("西北西", value=("西北西" in default_wind_dirs)): selected_wind_dirs.append("西北西")
+
+            with wc2:
+                if st.checkbox("西", value=("西" in default_wind_dirs)): selected_wind_dirs.append("西")
+                if st.checkbox("西南西", value=("西南西" in default_wind_dirs)): selected_wind_dirs.append("西南西")
+                if st.checkbox("南西", value=("南西" in default_wind_dirs)): selected_wind_dirs.append("南西")
+                if st.checkbox("南南西", value=("南南西" in default_wind_dirs)): selected_wind_dirs.append("南南西")
+
+            with wc3:
+                if st.checkbox("南", value=("南" in default_wind_dirs)): selected_wind_dirs.append("南")
+                if st.checkbox("南南東", value=("南南東" in default_wind_dirs)): selected_wind_dirs.append("南南東")
+                if st.checkbox("南東", value=("南東" in default_wind_dirs)): selected_wind_dirs.append("南東")
+                if st.checkbox("東南東", value=("東南東" in default_wind_dirs)): selected_wind_dirs.append("東南東")
+
+            with wc4:
+                if st.checkbox("東", value=("東" in default_wind_dirs)): selected_wind_dirs.append("東")
+                if st.checkbox("東北東", value=("東北東" in default_wind_dirs)): selected_wind_dirs.append("東北東")
+                if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
+                if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
 
     # 右：配点カード
     with col2_wind:
@@ -186,7 +206,7 @@ df['score_clouds'] = np.where(
     np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
 )
 
-# ③ 風条件判定（風速 ✕ ユーザーが選んだ風向）
+# ③ 風条件判定（風速 ✕ チェックされた風向）
 wind_speed_score = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
     1.0,
@@ -197,7 +217,7 @@ wind_speed_score = np.where(
     )
 )
 
-# 選択された風向に含まれていれば 1.0（満点対象）、含まれていなければ 0.0（0点）
+# チェックされた風向に含まれていれば 1.0、無効なら 0.0
 df['wind_dir_factor'] = np.where(df['風向'].isin(selected_wind_dirs), 1.0, 0.0)
 df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
 
@@ -234,7 +254,7 @@ with tab2:
     if total_weight != 100:
         st.info("💡 まずは「① 条件を設定する」タブで、合計配点をぴったり100点にしてみよう！")
     elif len(selected_wind_dirs) == 0:
-        st.warning("🧭 条件3の「風向き」が1つも選択されていません。風向きを1つ以上選んでみよう！")
+        st.warning("🧭 条件3の「風向き」のチェックが1つも入っていません。風向きを1つ以上選んでみよう！")
     elif has_zero_weight:
         st.warning("📋 配点が0点の項目があります。だるま夕日は温度・雲・風のバランスが大切です！")
     elif is_initial_condition:
