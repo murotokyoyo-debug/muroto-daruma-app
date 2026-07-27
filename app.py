@@ -64,52 +64,53 @@ with tab1:
         st.warning(f"⚠️ 現在の合計配点： **{total_weight}点**（あと {100 - total_weight} 点 調整が必要です）")
 
 # ==========================================
-# 📊 シミュレーション計算ロジック（マイルド減点方式）
+# 📊 シミュレーション計算ロジック（厳格AND判定化）
 # ==========================================
 df['温度差'] = df['海水温'] - df['気温']
 
-# ① 温度差：基準以上は満点、基準より2.0℃低い範囲までは「惜しい！」で点数を残す（それ以下は0点）
-temp_margin = 2.0
+# ① 温度差：基準より1.5℃低い範囲までで減点（それ以下は0点）
+temp_margin = 1.5
 df['score_temp'] = np.where(
     df['温度差'] >= threshold_temp,
     float(weight_temp),
     np.maximum(0.0, weight_temp * (1.0 - (threshold_temp - df['温度差']) / temp_margin))
 )
 
-# ② 雲量：基準以下は満点、基準より+20%以内までは「惜しい！」で点数を残す（それ以上は0点）
-cloud_margin = 20.0
+# ② 雲量：夕日観測には致命的なため、基準+10%を超えたら急速に0点化
+cloud_margin = 10.0
 df['score_clouds'] = np.where(
     df['雲量'] <= threshold_clouds,
     float(weight_clouds),
     np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
 )
 
-# ③ 風条件：風速の範囲内なら満点、前後1.0m/sの範囲は減点して点数を残す
+# ③ 風条件：風速の範囲外は厳しくカット
 wind_speed_score = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
     1.0,
     np.where(
         df['風速'] < min_wind,
-        np.maximum(0.0, 1.0 - (min_wind - df['風速']) / 1.0),
-        np.maximum(0.0, 1.0 - (df['風速'] - max_wind) / 3.0)
+        np.maximum(0.0, 1.0 - (min_wind - df['風速']) / 0.5),
+        np.maximum(0.0, 1.0 - (df['風速'] - max_wind) / 2.0)
     )
 )
 
 wind_direction_multipliers = {
     '北西': 1.0, '北北西': 1.0, '北': 1.0,
-    '西北西': 0.85, '北北東': 0.85,
-    '西': 0.7, '北東': 0.7,
-    '東北東': 0.5, '東': 0.5, '東南東': 0.5,
-    '南東': 0.5, '南南東': 0.5, '南': 0.5, '南南西': 0.5, '南西': 0.5, '西南西': 0.5
+    '西北西': 0.8, '北北東': 0.8,
+    '西': 0.6, '北東': 0.6,
+    '東北東': 0.3, '東': 0.3, '東南東': 0.3,
+    '南東': 0.3, '南南東': 0.3, '南': 0.3, '南南西': 0.3, '南西': 0.3, '西南西': 0.3
 }
-df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.5)
+df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.3)
 df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
 
 # 合計スコア
 df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
 
-# 合格ラインは 75.0 点
-threshold_score = 75.0
+# 💡 合格ラインを 85.0 点に引き上げ！
+# （これにより「3つの条件すべて」が良好でないと合格できなくなります）
+threshold_score = 85.0
 
 if total_weight == 100:
     df['発生予測'] = np.where(df['予測スコア'] >= threshold_score, 1, 0)
