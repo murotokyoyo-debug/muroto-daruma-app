@@ -65,14 +65,13 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
-            # 初期値を 5.0 ℃に設定
             threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 5.0, 0.5)
 
-    # 右：配点カード（初期値 0点）
+    # 右：配点カード（初期値 0点に更新）
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp")
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v2")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -96,14 +95,13 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #ff5722, #ff9800, #9e9e9e, #546e7a); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
-            # 初期値を 100% に設定
             threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 100, 10)
 
-    # 右：配点カード（初期値 0点）
+    # 右：配点カード（初期値 0点に更新）
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds")
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v2")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -129,7 +127,6 @@ with tab1:
                 <div style="height: 8px; background: linear-gradient(to right, #facc15 0%, #a3e635 25%, #16a34a 100%); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
             
-            # 初期値を 0.0〜20.0 m/s に設定
             min_wind, max_wind = st.slider(
                 "適正な風の強さの範囲 (m/s)",
                 min_value=0.0,
@@ -142,7 +139,6 @@ with tab1:
             st.markdown("---")
             st.markdown("**🧭 合格とする風向きを選択（チェックを入れてね）**")
 
-            # 初期値は全てチェックなし
             default_wind_dirs = []
             selected_wind_dirs = []
 
@@ -172,11 +168,11 @@ with tab1:
                 if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
                 if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
 
-    # 右：配点カード（初期値 0点） ＋ ヒントコラム
+    # 右：配点カード（初期値 0点に更新） ＋ ヒントコラム
     with col2_wind:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind")
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v2")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
         with st.container(border=True):
@@ -217,7 +213,7 @@ df['score_clouds'] = np.where(
     np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
 )
 
-# ③ 風条件判定（風速 ✕ チェックされた風向）
+# ③ 風条件判定
 wind_speed_score = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
     1.0,
@@ -228,14 +224,12 @@ wind_speed_score = np.where(
     )
 )
 
-# チェックされた風向に含まれていれば 1.0、無効なら 0.0
 df['wind_dir_factor'] = np.where(df['風向'].isin(selected_wind_dirs), 1.0, 0.0)
 df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
 
 # 合計スコア計算
 df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
 
-# 合格判定ライン（92.0点）
 threshold_score = 92.0
 
 if total_weight == 100:
@@ -253,7 +247,6 @@ avg_yearly_days = predicted_days / 4.0
 with tab2:
     st.subheader("📈 シミュレーション結果")
     
-    # 指標カード表示
     m1, m2 = st.columns(2)
     m1.metric("4シーズン合計発生日数", f"{predicted_days} 日", help="データ対象期間：2021年10月1日〜2025年3月31日（10月〜3月×4年分）")
     m2.metric("年間平均", f"{avg_yearly_days:.1f} 日 / 年")
