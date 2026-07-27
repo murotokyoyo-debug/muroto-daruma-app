@@ -107,7 +107,7 @@ with tab1:
     st.markdown("---")
 
     # ==========================================
-    # --- ③ 風の条件（風速 ＋ チェックボックス風向） ---
+    # --- ③ 風の条件（風速 ＋ チェックボックス風向 ＋ 解説コラム） ---
     # ==========================================
     st.markdown("### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、北や北西からの冷たい季節風が吹くと発生しやすくなります。")
@@ -140,7 +140,7 @@ with tab1:
             st.markdown("---")
             st.markdown("**🧭 合格とする風向きを選択（チェックを入れてね）**")
 
-            # ② 4列レイアウトでチェックボックスをきれいに並べる
+            # ② 4列レイアウトでチェックボックスを配置
             default_wind_dirs = ['北', '北北西', '北西', '西北西']
             selected_wind_dirs = []
 
@@ -170,12 +170,23 @@ with tab1:
                 if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
                 if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
 
-    # 右：配点カード
+    # 右：配点カード ＋ 解説コラム
     with col2_wind:
+        # 配点カード
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
             weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=20, key="w_wind")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
+
+        # 💡 風向きコラムカード（空きスペースの活用）
+        with st.container(border=True):
+            st.markdown("##### 💡 なぜ「風向き」が大事？")
+            st.markdown("""
+            * **北〜北西の風（◎チャンス！）**  
+              四国山地を越えて吹く冷たい季節風（陸風）。温かい海との差が広がり、屈折が起きやすくなります！
+            * **南〜東の風（×むずかしい…）**  
+              太平洋から湿った暖かい空気が入るため、雲や霧が出やすく夕日自体が見えにくくなります。
+            """)
 
     # 配点チェック
     total_weight = weight_temp + weight_clouds + weight_wind
