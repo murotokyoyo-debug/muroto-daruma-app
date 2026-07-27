@@ -65,14 +65,13 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
-            # スライダー範囲を 0.0 ℃ 〜 15.0 ℃（初期値 0.0 ℃）に変更
             threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 0.0, 15.0, 0.0, 0.5)
 
-    # 右：配点カード（初期値 0点）
+    # 右：配点カード
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v3")
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v5")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -98,11 +97,11 @@ with tab1:
             """, unsafe_allow_html=True)
             threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 100, 10)
 
-    # 右：配点カード（初期値 0点）
+    # 右：配点カード
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v3")
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v5")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -169,11 +168,11 @@ with tab1:
                 if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
                 if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
 
-    # 右：配点カード（初期値 0点） ＋ ヒントコラム
+    # 右：配点カード ＋ ヒントコラム
     with col2_wind:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v3")
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v5")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
         with st.container(border=True):
@@ -309,5 +308,8 @@ with tab3:
             st.success(f"🎉 **発生可能性【大】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
         else:
             st.error(f"❄️ **発生可能性【低】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
+            # 温度差はあるが雲量等で不合格になった場合のアドバイスメッセージ
+            if row['score_temp'] >= weight_temp * 0.8 and row['雲量'] > threshold_clouds:
+                st.info(f"💡 **現地観測のポイント**: この日は温度差（{row['温度差']:.1f}℃）が十分あります！データ上の雲量は{row['雲量']}％ですが、**西の水平線ぎりぎりさえ開けていれば見られた可能性が高い日**です！")
     else:
         st.warning("この日付のデータはありません。")
