@@ -12,7 +12,8 @@ st.caption("気象条件を組み合わせて、だるま夕日が見える日�
 # データの読み込み
 try:
     df = pd.read_csv('muroto_history.csv')
-    df['日付'] = pd.to_datetime(df['日付']).dt.strftime('%Y-%m-%d')
+    # 日付の読み込み（シリアル値や異形式が混ざっていてもエラーにならないよう柔軟に変換）
+    df['日付'] = pd.to_datetime(df['日付'], format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
     df['月'] = pd.to_datetime(df['日付']).dt.month
 except Exception as e:
     st.error(f"データファイルが見つかりません: {e}")
@@ -64,14 +65,16 @@ with tab1:
         st.warning(f"⚠️ 現在の合計配点： **{total_weight}点**（あと {100 - total_weight} 点 調整が必要です）")
 
 # ==========================================
-# 📊 シミュレーション計算ロジック (既存処理)
+# 📊 シミュレーション計算ロジック
 # ==========================================
 df['温度差'] = df['海水温'] - df['気温']
 
+# ① 温度差スコア
 df['score_temp'] = np.where(df['温度差'] >= threshold_temp, 
                             weight_temp, 
                             np.maximum(0.0, (df['温度差'] / threshold_temp) * weight_temp))
 
+# ② 雲量スコア
 if threshold_clouds == 100:
     df['score_clouds'] = weight_clouds
 else:
@@ -79,6 +82,7 @@ else:
                                   weight_clouds, 
                                   np.maximum(0.0, ((100 - df['雲量']) / (100 - threshold_clouds)) * weight_clouds))
 
+# ③ 風条件スコア
 df['wind_speed_factor'] = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind), 
     1.0,
@@ -95,6 +99,7 @@ wind_direction_multipliers = {
 df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.0)
 df['score_wind'] = df['wind_speed_factor'] * df['wind_dir_factor'] * weight_wind
 
+# 合計スコア
 df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
 
 if total_weight == 100:
@@ -105,7 +110,9 @@ else:
 
 total_days = len(df)
 predicted_days = int(df['発生予測'].sum())
-avg_yearly_days = predicted_days / 5.0
+
+# 2021年10月〜2025年3月の4シーズン（4年間）データのため 4.0 で割る
+avg_yearly_days = predicted_days / 4.0
 
 # ------------------------------------------
 # タブ2：予測結果
@@ -113,9 +120,9 @@ avg_yearly_days = predicted_days / 5.0
 with tab2:
     st.subheader("📈 シミュレーション結果")
     
-    # 指標をスマホでも見やすくカード表示
+    # 指標カード表示（期間の補足ヘルプテキスト付き）
     m1, m2 = st.columns(2)
-    m1.metric("5年間の予想発生日数", f"{predicted_days} 日")
+    m1.metric("4シーズン合計発生日数", f"{predicted_days} 日", help="データ対象期間：2021年10月1日〜2025年3月31日（10月〜3月×4年分）")
     m2.metric("年間平均", f"{avg_yearly_days:.1f} 日 / 年")
 
     st.markdown("#### 🤖 AIアドバイザーの判定")
@@ -130,15 +137,16 @@ with tab2:
         st.warning("🔍 条件の基準（スライダー）が初期設定のままのようです。少し絞り込んでみましょう！")
     elif predicted_days == 0:
         st.warning("⚠️ 発生予測が0日になりました。条件が少し厳しすぎるかもしれません。")
-    elif 75 <= predicted_days <= 400:
-        st.success("🟢 【素晴らしい！】実際の室戸岬の出現頻度にかなり近い、リアルなシミュレーションモデルです！")
-    elif predicted_days < 75:
-        st.warning(f"💡 年間 {avg_yearly_days:.1f} 日の予測です。実際の室戸より少し基準が厳しめかもしれません。")
+    # 4年間で 20日〜80日（年間 5日〜20日相当）を適正基準に設定
+    elif 20 <= predicted_days <= 80:
+        st.success(f"🟢 【素晴らしい！】年間 {avg_yearly_days:.1f} 日の予測です。実際の室戸岬の年間発生数（10〜20回前後）に極めて近いリアルな条件設定です！")
+    elif predicted_days < 20:
+        st.warning(f"💡 年間 {avg_yearly_days:.1f} 日の予測です。かなり厳しい条件ですが、完璧な「本物のだるま夕日」に絞った条件と言えます。")
     else:
-        st.error(f"🔺 年間 {avg_yearly_days:.1f} 日の予測です。基準が少しゆるく、見誤りが多いかもしれません。")
+        st.error(f"🔺 年間 {avg_yearly_days:.1f} 日の予測です。発生数が多すぎます！もう少し「温度差」や「風向き」「雲量」の合格ラインを厳しく設定してみましょう。")
 
     st.markdown("---")
-    st.markdown("#### 📅 月別の発生予想（5年間の合計）")
+    st.markdown("#### 📅 月別の発生予想（4シーズンの合計）")
     monthly_summary = df.groupby('月')['発生予測'].sum().reset_index().set_index('月')
     st.bar_chart(monthly_summary['発生予測'])
 
@@ -155,7 +163,7 @@ with tab3:
         row = target_data.iloc[0]
         st.write(f"**【{date_str} の室戸岬の観測データ】**")
         
-        # スマホで見やすいメトリクス表示
+        # メトリクス表示
         col_a, col_b = st.columns(2)
         col_a.metric("気温 / 海水温", f"{row['気温']}℃ / {row['海水温']}℃")
         col_a.metric("温度差", f"{row['温度差']:.1f}℃")
