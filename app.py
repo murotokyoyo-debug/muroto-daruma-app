@@ -65,14 +65,13 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
-            # 初期値を最もゆるい 5.0 ℃に設定
+            # 初期値を 5.0 ℃に設定
             threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 5.0, 0.5)
 
-    # 右：配点カード
+    # 右：配点カード（初期値 0点）
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            # 初期値を 0 点に設定
             weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
@@ -97,21 +96,20 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #ff5722, #ff9800, #9e9e9e, #546e7a); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
-            # 初期値を最もゆるい 100%（全許可）に設定
+            # 初期値を 100% に設定
             threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 100, 10)
 
-    # 右：配点カード
+    # 右：配点カード（初期値 0点）
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            # 初期値を 0 点に設定
             weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
 
     # ==========================================
-    # --- ③ 風の条件（風速 ＋ チェックボックス風向 ＋ ヒントコラム） ---
+    # --- ③ 風の条件 ---
     # ==========================================
     st.markdown("### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、風の向きや強さによって水平線付近の空気の状態が変わります。")
@@ -131,7 +129,7 @@ with tab1:
                 <div style="height: 8px; background: linear-gradient(to right, #facc15 0%, #a3e635 25%, #16a34a 100%); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
             
-            # ① 風速スライダー（初期値を全範囲 0.0〜20.0m/s に設定）
+            # 初期値を 0.0〜20.0 m/s に設定
             min_wind, max_wind = st.slider(
                 "適正な風の強さの範囲 (m/s)",
                 min_value=0.0,
@@ -144,7 +142,7 @@ with tab1:
             st.markdown("---")
             st.markdown("**🧭 合格とする風向きを選択（チェックを入れてね）**")
 
-            # ② 4列レイアウト（初期値は全てチェックなし）
+            # 初期値は全てチェックなし
             default_wind_dirs = []
             selected_wind_dirs = []
 
@@ -174,16 +172,13 @@ with tab1:
                 if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
                 if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
 
-    # 右：配点カード ＋ ヒントコラム
+    # 右：配点カード（初期値 0点） ＋ ヒントコラム
     with col2_wind:
-        # 配点カード
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            # 初期値を 0 点に設定
             weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
-        # 💡 風向きヒントカード
         with st.container(border=True):
             st.markdown("##### 💡 風向きを考えるヒント")
             st.markdown("""
@@ -287,7 +282,6 @@ with tab2:
     st.markdown("---")
     st.markdown("#### 📅 月別の発生予想（4シーズンの合計）")
     
-    # 10月〜3月（シーズン順）に並べ替え
     season_months = [10, 11, 12, 1, 2, 3]
     monthly_data = df.groupby('月')['発生予測'].sum().reindex(season_months, fill_value=0).reset_index()
     monthly_data['月表示'] = monthly_data['月'].astype(str) + '月'
