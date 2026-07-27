@@ -32,65 +32,104 @@ with tab1:
 
     st.markdown("---")
     
+    # ==========================================
     # --- ① 温度差 ---
-    st.markdown("#### 🌡️ 条件1：海と空気の温度差（下位蜃気楼の条件）")
+    # ==========================================
+    st.markdown("### 🌡️ 条件1：海と空気の温度差（下位蜃気楼の条件）")
     st.caption("※温かい海の上に冷たい空気が来ると、光が屈折して「だるま型」に見えます。")
     
-    # 🎨 温度差グラデーションバー ＋ ラベル
-    st.markdown("""
-        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;">
-            <span style="color: #60a5fa;">🔵 差が小さい (発生しにくい)</span>
-            <span style="color: #f87171;">🔴 差が大きい (発生しやすい) ➔</span>
-        </div>
-        <div style="height: 10px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 5px; margin-bottom: 12px;"></div>
-    """, unsafe_allow_html=True)
+    col1_temp, col2_temp = st.columns([7, 3])
     
-    threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 8.0, 0.5)
-    weight_temp = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=40, key="w_temp")
+    # 左：合格基準カード
+    with col1_temp:
+        with st.container(border=True):
+            st.markdown("##### 🎯 合格基準（合格ライン）")
+            # 🎨 グラデーションバー ＋ ラベル
+            st.markdown("""
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
+                    <span style="color: #60a5fa;">🔵 差が小さい (発生しにくい)</span>
+                    <span style="color: #f87171;">🔴 差が大きい (発生しやすい) ➔</span>
+                </div>
+                <div style="height: 8px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 4px; margin-bottom: 12px;"></div>
+            """, unsafe_allow_html=True)
+            threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 8.0, 0.5)
+
+    # 右：配点カード
+    with col2_temp:
+        with st.container(border=True):
+            st.markdown("##### ⚖️ 重要度（配点）")
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=40, key="w_temp")
+            st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
 
+    # ==========================================
     # --- ② 雲量 ---
-    st.markdown("#### ☁️ 条件2：空の晴れぐあい（雲の量）")
+    # ==========================================
+    st.markdown("### ☁️ 条件2：空の晴れぐあい（雲の量）")
     st.caption("※夕日が見えるためには、空に雲が少ないことが大切です。")
     
-    # 🎨 雲量グラデーションバー ＋ ラベル
-    st.markdown("""
-        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;">
-            <span style="color: #ff7849;">🌅 0% 快晴 (絶好の夕日)</span>
-            <span style="color: #94a3b8;">☁️ 100% 曇り (見えない) ➔</span>
-        </div>
-        <div style="height: 10px; background: linear-gradient(to right, #ff5722, #ff9800, #9e9e9e, #546e7a); border-radius: 5px; margin-bottom: 12px;"></div>
-    """, unsafe_allow_html=True)
+    col1_clouds, col2_clouds = st.columns([7, 3])
     
-    threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 20, 10)
-    weight_clouds = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=40, key="w_clouds")
+    # 左：合格基準カード
+    with col1_clouds:
+        with st.container(border=True):
+            st.markdown("##### 🎯 合格基準（合格ライン）")
+            # 🎨 グラデーションバー ＋ ラベル
+            st.markdown("""
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
+                    <span style="color: #ff7849;">🌅 0% 快晴 (絶好の夕日)</span>
+                    <span style="color: #94a3b8;">☁️ 100% 曇り (見えない) ➔</span>
+                </div>
+                <div style="height: 8px; background: linear-gradient(to right, #ff5722, #ff9800, #9e9e9e, #546e7a); border-radius: 4px; margin-bottom: 12px;"></div>
+            """, unsafe_allow_html=True)
+            threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 20, 10)
+
+    # 右：配点カード
+    with col2_clouds:
+        with st.container(border=True):
+            st.markdown("##### ⚖️ 重要度（配点）")
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=40, key="w_clouds")
+            st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
 
+    # ==========================================
     # --- ③ 風の条件 ---
-    st.markdown("#### 🌬️ 条件3：风の強さと向き")
+    # ==========================================
+    st.markdown("### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、北や北西からの冷たい季節風が吹くと発生しやすくなります。")
     
-    # 🎨 風速グラデーションバー ＋ ラベル
-    st.markdown("""
-        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; margin-bottom: 4px;">
-            <span style="color: #facc15;">🍃 0m/s 無風</span>
-            <span style="color: #4ade80;">🍃 5m/s 適風</span>
-            <span style="color: #22c55e;">💨 20m/s 強風 ➔</span>
-        </div>
-        <div style="height: 10px; background: linear-gradient(to right, #facc15 0%, #a3e635 25%, #16a34a 100%); border-radius: 5px; margin-bottom: 12px;"></div>
-    """, unsafe_allow_html=True)
+    col1_wind, col2_wind = st.columns([7, 3])
     
-    min_wind, max_wind = st.slider(
-        "適正な風の強さの範囲 (m/s)",
-        min_value=0.0,
-        max_value=20.0,
-        value=(1.0, 9.0),
-        step=0.5,
-        help="※風が弱すぎても温床が作られず、強すぎても波で水平線が崩れてしまいます。"
-    )
-    weight_wind = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=20, key="w_wind")
+    # 左：合格基準カード
+    with col1_wind:
+        with st.container(border=True):
+            st.markdown("##### 🎯 合格基準（合格ライン）")
+            # 🎨 グラデーションバー ＋ ラベル
+            st.markdown("""
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
+                    <span style="color: #facc15;">🍃 0m/s 無風</span>
+                    <span style="color: #4ade80;">🍃 5m/s 適風</span>
+                    <span style="color: #22c55e;">💨 20m/s 強風 ➔</span>
+                </div>
+                <div style="height: 8px; background: linear-gradient(to right, #facc15 0%, #a3e635 25%, #16a34a 100%); border-radius: 4px; margin-bottom: 12px;"></div>
+            """, unsafe_allow_html=True)
+            min_wind, max_wind = st.slider(
+                "適正な風の強さの範囲 (m/s)",
+                min_value=0.0,
+                max_value=20.0,
+                value=(1.0, 9.0),
+                step=0.5,
+                help="※風が弱すぎても温床が作られず、強すぎても波で水平線が崩れてしまいます。"
+            )
+
+    # 右：配点カード
+    with col2_wind:
+        with st.container(border=True):
+            st.markdown("##### ⚖️ 重要度（配点）")
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=20, key="w_wind")
+            st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
     # 配点チェック
     total_weight = weight_temp + weight_clouds + weight_wind
