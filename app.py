@@ -17,304 +17,386 @@ st.markdown("""
         margin-bottom: 0px;
         padding-bottom: 5px;
     ">
-        🌅 室戸だるま夕日シュミレーター（理科学習・実践モデル）
+        🌅 室戸だるま夕日シュミレーター
     </h1>
 """, unsafe_allow_html=True)
 
-st.caption("気象の物理メカニズム（下位蜃気楼）に基づき、室戸岬のだるま夕日発生条件をシミュレーション＆予想しよう！")
+st.caption("気象条件を組み合わせて、だるま夕日が見える日を予測してみよう！")
 
 # データの読み込み
-@st.cache_data
-def load_data():
-    try:
-        df = pd.read_csv('muroto_history.csv')
-        df['日付'] = pd.to_datetime(df['日付'], format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
-        df['月'] = pd.to_datetime(df['日付']).dt.month
-        df['温度差'] = df['海水温'] - df['気温']
-        return df
-    except Exception as e:
-        return None
-
-df = load_data()
+try:
+    df = pd.read_csv('muroto_history.csv')
+    df['日付'] = pd.to_datetime(df['日付'], format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
+    df['月'] = pd.to_datetime(df['日付']).dt.month
+except Exception as e:
+    st.error(f"データファイルが見つかりません: {e}")
+    st.stop()
 
 # ==========================================
-# 📱 タブ構成（実践モードを含む4タブ）
+# 📱 タブ構成（④ 実践モードを追加）
 # ==========================================
 tab1, tab2, tab3, tab4 = st.tabs([
-    "⚙️ ① 発生条件の設定", 
-    "📈 ② 過去データ検証", 
-    "🔎 ③ 日付ピンポイント検索",
+    "⚙️ ① 条件を設定する", 
+    "📈 ② 予測結果を見る", 
+    "🔎 ③ 日付で調べる",
     "🔮 ④ 今日の夕日予報（実践モード）"
 ])
 
 # ------------------------------------------
-# タブ1：条件設定（グラデーション評価モデル）
+# タブ1：条件設定
 # ------------------------------------------
 with tab1:
-    st.subheader("🛠️ だるま夕日の「科学的発生規則」を設定しよう")
-    st.info("💡 だるま夕日は「下位蜃気楼」という物理現象です。条件にぴったり当てはまらなくても、数値に応じて連続的（滑らか）に確率が変化します！")
+    st.subheader("🛠️ だるま夕日の「発生ルール」を作ろう")
+    st.info("💡 3つの項目の「配点（重要度）」を足して、**ぴったり100点**になるように調整してね！")
 
     st.markdown("---")
     
-    # === ① 温度差（連続評価モデル） ===
-    st.markdown("### 🌡️ 条件1：海水温と気温の差（目標温度差）")
-    st.markdown("""
-    > **⚠️ 理科のポイント：** 温かい海の上に冷たい空気の層ができることで、光が屈折します。  
-    > **海水温が気温より低い（0℃以下）と物理的に蜃気楼は発生しません**が、目標温度差より少し低くても、条件に応じて確率が滑らかに付与されます。
-    """)
+    # ==========================================
+    # --- ① 温度差 ---
+    # ==========================================
+    st.markdown("### 🌡️ 条件1：海と空気の温度差（下位蜃気楼の条件）")
+    st.caption("※温かい海の上に冷たい空気が来ると、光が屈折して「だるま型」に見えます。")
     
-    col1_temp, col2_temp = st.columns([6, 4])
+    col1_temp, col2_temp = st.columns([7, 3])
+    
+    # 左：合格基準カード
     with col1_temp:
-        threshold_temp = st.slider(
-            "理想的な海水温と気温の差 (℃)", 
-            min_value=0.5, max_value=8.0, value=3.0, step=0.5,
-            help="※一般的に2〜3℃以上の差があると綺麗に見えやすくなります。"
-        )
+        with st.container(border=True):
+            st.markdown("##### 🎯 合格基準（条件設定）")
+            st.markdown("""
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
+                    <span style="color: #60a5fa;">🔵 差が小さい (発生しにくい)</span>
+                    <span style="color: #f87171;">🔴 差が大きい (発生しやすい) ➔</span>
+                </div>
+                <div style="height: 8px; background: linear-gradient(to right, #2563eb, #3b82f6, #f97316, #dc2626); border-radius: 4px; margin-bottom: 12px;"></div>
+            """, unsafe_allow_html=True)
+            threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 0.0, 15.0, 0.0, 0.5)
+
+    # 右：配点カード
     with col2_temp:
-        st.success(f"""
-        🎯 **判定ルール:**  
-        * **0℃ 以下:** 蜃気楼が起きないため **0点**
-        * **0℃ ～ {threshold_temp}℃:** 温度差に応じて **0〜100点（グラデーション）**
-        * **{threshold_temp}℃ 以上:** 満点（**100点**）
-        """)
+        with st.container(border=True):
+            st.markdown("##### ⚖️ 重要度（配点）")
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v5")
+            st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # === ② 雲量 ===
-    st.markdown("### ☁️ 条件2：空の晴れぐあい（許容する雲量）")
-    st.markdown("""
-    > **⚠️ 理科のポイント：** だるま夕日は西の水平線が見えることが大切です。雲量が目標を少し超えても、徐々に確率が下がる仕組みになっています。
-    """)
+    # ==========================================
+    # --- ② 雲量 ---
+    # ==========================================
+    st.markdown("### ☁️ 条件2：空の晴れぐあい（雲の量）")
+    st.caption("※夕日が見えるためには、空に雲が少ないことが大切です。")
     
-    col1_clouds, col2_clouds = st.columns([6, 4])
+    col1_clouds, col2_clouds = st.columns([7, 3])
+    
+    # 左：合格基準カード
     with col1_clouds:
-        threshold_clouds = st.slider(
-            "理想的な雲量は何％以下？ (%)", 
-            min_value=0, max_value=100, value=30, step=5,
-            help="※雲量が少ないほど高得点になります。"
-        )
+        with st.container(border=True):
+            st.markdown("##### 🎯 合格基準（条件設定）")
+            st.markdown("""
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
+                    <span style="color: #ff7849;">🌅 0% 快晴 (絶好の夕日)</span>
+                    <span style="color: #94a3b8;">☁️ 100% 曇り (見えない) ➔</span>
+                </div>
+                <div style="height: 8px; background: linear-gradient(to right, #ff5722, #ff9800, #9e9e9e, #546e7a); border-radius: 4px; margin-bottom: 12px;"></div>
+            """, unsafe_allow_html=True)
+            threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 100, 10)
+
+    # 右：配点カード
     with col2_clouds:
-        st.info(f"🎯 **判定ルール:**  \n雲量が **{threshold_clouds}% 以下** であれば100点。超えた分だけ滑らかに減点されます。")
+        with st.container(border=True):
+            st.markdown("##### ⚖️ 重要度（配点）")
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v5")
+            st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # === ③ 風の条件 ===
-    st.markdown("### 🌬️ 条件3：風向と風速（空気層の安定度）")
-    st.markdown("""
-    > **⚠️ 理科のポイント：** 四国山地を越えて吹く「冷たく乾いた陸風」は海上に安定した温度差を作ります。強風すぎると温床が乱れてしまいます。
-    """)
+    # ==========================================
+    # --- ③ 風の条件 ---
+    # ==========================================
+    st.markdown("### 🌬️ 条件3：風の強さと向き")
+    st.caption("※室戸では、風の向きや強さによって水平線付近の空気の状態が変わります。")
     
-    col1_wind, col2_wind = st.columns([6, 4])
+    col1_wind, col2_wind = st.columns([7, 3])
+    
+    # 左：合格基準カード
     with col1_wind:
-        st.markdown("**🧭 風向きグループの選択**")
-        wind_group = st.radio(
-            "発生しやすい風向きのタイプを選んでね：",
-            [
-                "🍃 陸風メイン（北・北西・西北西など：山越えの冷たく乾いた風）",
-                "🌊 海風メイン（南・南東・東など：太平洋からの湿った風）",
-                "🌐 全方向 OK（すべての風向きを許可）"
-            ],
-            index=0
-        )
-        
-        if "陸風" in wind_group:
-            selected_wind_dirs = ["北", "北北西", "北西", "西北西", "西", "東北東", "北東", "北北東"]
-        elif "海風" in wind_group:
-            selected_wind_dirs = ["南", "南南東", "南東", "東南東", "東", "西南西", "南西", "南南西"]
-        else:
-            selected_wind_dirs = ["北", "北北西", "北西", "西北西", "西", "西南西", "南西", "南南西", 
-                                  "南", "南南東", "南東", "東南東", "東", "東北東", "北東", "北北東"]
+        with st.container(border=True):
+            st.markdown("##### 🎯 合格基準（条件設定）")
+            st.markdown("""
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
+                    <span style="color: #facc15;">🍃 0m/s 無風</span>
+                    <span style="color: #4ade80;">🍃 5m/s 適風</span>
+                    <span style="color: #22c55e;">💨 20m/s 強風 ➔</span>
+                </div>
+                <div style="height: 8px; background: linear-gradient(to right, #facc15 0%, #a3e635 25%, #16a34a 100%); border-radius: 4px; margin-bottom: 12px;"></div>
+            """, unsafe_allow_html=True)
+            
+            min_wind, max_wind = st.slider(
+                "適正な風の強さの範囲 (m/s)",
+                min_value=0.0,
+                max_value=20.0,
+                value=(0.0, 20.0),
+                step=0.5,
+                help="※風が弱すぎても温床が作られず、強すぎても波で水平線が崩れてしまいます。"
+            )
 
-        min_wind, max_wind = st.slider(
-            "適正な風速の範囲 (m/s)",
-            min_value=0.0, max_value=15.0, value=(1.0, 8.0), step=0.5
-        )
+            st.markdown("---")
+            st.markdown("**🧭 合格とする風向きを選択（チェックを入れてね）**")
 
+            default_wind_dirs = []
+            selected_wind_dirs = []
+
+            wc1, wc2, wc3, wc4 = st.columns(4)
+
+            with wc1:
+                if st.checkbox("北", value=("北" in default_wind_dirs)): selected_wind_dirs.append("北")
+                if st.checkbox("北北西", value=("北北西" in default_wind_dirs)): selected_wind_dirs.append("北北西")
+                if st.checkbox("北西", value=("北西" in default_wind_dirs)): selected_wind_dirs.append("北西")
+                if st.checkbox("西北西", value=("西北西" in default_wind_dirs)): selected_wind_dirs.append("西北西")
+
+            with wc2:
+                if st.checkbox("西", value=("西" in default_wind_dirs)): selected_wind_dirs.append("西")
+                if st.checkbox("西南西", value=("西南西" in default_wind_dirs)): selected_wind_dirs.append("西南西")
+                if st.checkbox("南西", value=("南西" in default_wind_dirs)): selected_wind_dirs.append("南西")
+                if st.checkbox("南南西", value=("南南西" in default_wind_dirs)): selected_wind_dirs.append("南南西")
+
+            with wc3:
+                if st.checkbox("南", value=("南" in default_wind_dirs)): selected_wind_dirs.append("南")
+                if st.checkbox("南南東", value=("南南東" in default_wind_dirs)): selected_wind_dirs.append("南南東")
+                if st.checkbox("南東", value=("南東" in default_wind_dirs)): selected_wind_dirs.append("南東")
+                if st.checkbox("東南東", value=("東南東" in default_wind_dirs)): selected_wind_dirs.append("東南東")
+
+            with wc4:
+                if st.checkbox("東", value=("東" in default_wind_dirs)): selected_wind_dirs.append("東")
+                if st.checkbox("東北東", value=("東北東" in default_wind_dirs)): selected_wind_dirs.append("東北東")
+                if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
+                if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
+
+    # 右：配点カード ＋ ヒントコラム
     with col2_wind:
-        st.success(f"""
-        🎯 **風向き・風速設定:**  
-        * 対象風向: {', '.join(selected_wind_dirs[:4])}... 等  
-        * 適正風速: **{min_wind}m/s ～ {max_wind}m/s**
-        """)
+        with st.container(border=True):
+            st.markdown("##### ⚖️ 重要度（配点）")
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v5")
+            st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
+        with st.container(border=True):
+            st.markdown("##### 💡 風向きを考えるヒント")
+            st.markdown("""
+            * **陸側から吹く風（山越えの風）**  
+              四国山地を越えて届くため、冷たく乾いた空気の層を海の上に作りやすくなります。
+            * **海側から吹く風（沖からの風）**  
+              太平洋から湿った暖かい風が吹き込むため、水蒸気で雲や霧が発生しやすくなります。
+            """)
+
+    # 配点チェック
+    total_weight = weight_temp + weight_clouds + weight_wind
     st.markdown("---")
-    
-    # === ④ 総合判定のボーダー ===
-    st.markdown("### 🎯 総合発生判定のボーダーライン")
-    threshold_prob = st.slider("発生予測とする総合確率の境界値 (%)", 40, 90, 65, 5, help="※この計算確率以上で『発生予測あり（1）』と判定します。")
+    if total_weight == 100:
+        st.success(f"🎉 現在の合計配点： **{total_weight}点**（OK！「② 予測結果を見る」タブを開いてね）")
+    else:
+        st.warning(f"⚠️ 現在の合計配点： **{total_weight}点**（あと {100 - total_weight} 点 調整が必要です）")
 
-# ------------------------------------------
-# 計算ロジック（グラデーション確率モデル）
-# ------------------------------------------
-def calculate_prediction(data_df):
-    if data_df is None or len(data_df) == 0:
-        return data_df
-    
-    res = data_df.copy()
-    
-    # 1. 物理的大前提：海水温 > 気温（0℃以下は蜃気楼が原理的に不成立）
-    is_mirage_possible = res['温度差'] > 0.0
-    
-    # 2. 温度差スコア（目標値に対する割合で0〜100点へ滑らかに変化）
-    temp_ratio = res['温度差'] / threshold_temp if threshold_temp > 0 else 1.0
-    score_temp = np.where(is_mirage_possible, np.clip(temp_ratio * 100.0, 0.0, 100.0), 0.0)
-    
-    # 3. 雲量スコア（目標以下は100点、超えた分だけ滑らかに減点）
-    cloud_diff = np.maximum(0.0, res['雲量'] - threshold_clouds)
-    score_cloud = np.maximum(0.0, 100.0 - cloud_diff * 2.0)
-    
-    # 4. 風条件スコア（風向・風速）
-    wind_dir_ok = res['風向'].isin(selected_wind_dirs)
-    wind_speed_ok = (res['風速'] >= min_wind) & (res['風速'] <= max_wind)
-    
-    score_wind = np.where(
-        wind_dir_ok & wind_speed_ok, 100.0,
-        np.where(wind_dir_ok | wind_speed_ok, 50.0, 10.0)
+# ==========================================
+# 📊 気象物理モデルに基づくリアル計算ロジック
+# ==========================================
+df['温度差'] = df['海水温'] - df['気温']
+
+# ① 温度差判定
+temp_margin = 1.0
+df['score_temp'] = np.where(
+    df['温度差'] >= threshold_temp,
+    float(weight_temp),
+    np.maximum(0.0, weight_temp * (1.0 - (threshold_temp - df['温度差']) / temp_margin))
+)
+
+# ② 雲量判定
+cloud_margin = 5.0
+df['score_clouds'] = np.where(
+    df['雲量'] <= threshold_clouds,
+    float(weight_clouds),
+    np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
+)
+
+# ③ 風条件判定
+wind_speed_score = np.where(
+    (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
+    1.0,
+    np.where(
+        df['風速'] < min_wind,
+        np.maximum(0.0, 1.0 - (min_wind - df['風速']) / 0.5),
+        np.maximum(0.0, 1.0 - (df['風速'] - max_wind) / 1.5)
     )
-    
-    # 5. 総合確率（温度差 <= 0℃ の場合は一律 0%）
-    raw_prob = (score_temp * 0.4) + (score_cloud * 0.4) + (score_wind * 0.2)
-    res['発生確率'] = np.where(is_mirage_possible, raw_prob, 0.0)
-    
-    # 6. 発生予測判定
-    res['発生予測'] = np.where(res['発生確率'] >= threshold_prob, 1, 0)
-    
-    return res
+)
 
-if df is not None:
-    df_calc = calculate_prediction(df)
+df['wind_dir_factor'] = np.where(df['風向'].isin(selected_wind_dirs), 1.0, 0.0)
+df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
+
+# 合計スコア計算
+df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
+
+threshold_score = 92.0
+
+if total_weight == 100:
+    df['発生予測'] = np.where(df['予測スコア'] >= threshold_score, 1, 0)
 else:
-    df_calc = None
+    df['発生予測'] = 0
+
+total_days = len(df)
+predicted_days = int(df['発生予測'].sum())
+avg_yearly_days = predicted_days / 4.0
 
 # ------------------------------------------
-# タブ2：過去データ検証
+# タブ2：予測結果
 # ------------------------------------------
 with tab2:
-    st.subheader("📈 シミュレーション結果（過去データの検証）")
+    st.subheader("📈 シミュレーション結果")
     
-    if df_calc is None:
-        st.error("⚠️ データファイル（muroto_history.csv）が読み込まれていません。")
+    m1, m2 = st.columns(2)
+    m1.metric("4シーズン合計発生日数", f"{predicted_days} 日", help="データ対象期間：2021年10月1日〜2025年3月31日（10月〜3月×4年分）")
+    m2.metric("年間平均", f"{avg_yearly_days:.1f} 日 / 年")
+
+    st.markdown("#### 🤖 AIアドバイザーの判定")
+    has_zero_weight = (weight_temp == 0 or weight_clouds == 0 or weight_wind == 0)
+    is_initial_condition = (threshold_temp == 0.0 or threshold_clouds == 100 or min_wind == 0.0 or max_wind == 20.0)
+
+    if total_weight != 100:
+        st.info("💡 まずは「① 条件を設定する」タブで、合計配点をぴったり100点にしてみよう！")
+    elif len(selected_wind_dirs) == 0:
+        st.warning("🧭 条件3の「風向き」のチェックが1つも入っていません。風向きを1つ以上選んでみよう！")
+    elif has_zero_weight:
+        st.warning("📋 配点が0点の項目があります。だるま夕日は温度・雲・風のバランスが大切です！")
+    elif is_initial_condition:
+        st.warning("🔍 条件の基準（スライダー）が初期設定のままのようです。少し絞り込んでみましょう！")
+    elif predicted_days == 0:
+        st.warning("⚠️ 発生予測が0日になりました。条件が少し厳しすぎるかもしれません。")
+    elif 20 <= predicted_days <= 80:
+        st.success(f"🟢 【素晴らしい！】年間 {avg_yearly_days:.1f} 日の予測です。実際の室戸岬の年間発生数（10〜20回前後）に極めて近いリアルな条件設定です！")
+    elif predicted_days < 20:
+        st.warning(f"💡 年間 {avg_yearly_days:.1f} 日の予測です。かなり厳しい条件ですが、完璧な「本物のだるま夕日」に絞った条件と言えます。")
     else:
-        total_days = len(df_calc)
-        predicted_days = int(df_calc['発生予測'].sum())
-        avg_yearly_days = predicted_days / 4.0
+        st.error(f"🔺 年間 {avg_yearly_days:.1f} 日の予測です。発生数が多すぎます！もう少し「温度差」や「風向き」「雲量」の合格ラインを厳しく設定してみましょう。")
 
-        m1, m2, m3 = st.columns(3)
-        m1.metric("検証対象日数", f"{total_days} 日", "2021-2025（10月〜3月）")
-        m2.metric("4シーズン合計発生日数", f"{predicted_days} 日")
-        m3.metric("年間平均発生日数", f"{avg_yearly_days:.1f} 日 / 年", "実際の平均: 約10〜20日")
-
-        st.markdown("#### 🤖 AI気象アドバイザーの判定＆学習フィードバック")
-        
-        if "海風" in wind_group:
-            st.error("❌ **気象的矛盾:** 海風（沖からの風）は水蒸気を含み、空気層を乱すため不向きです。「陸風メイン」に設定してみましょう！")
-        elif predicted_days == 0:
-            st.warning("⚠️ **条件が厳しすぎます:** 発生予測が0日になりました。確率ボーダー値や温度差スライダーを少し緩めてみましょう。")
-        elif 10 <= avg_yearly_days <= 25:
-            st.success(f"🎉 **【理想的な設定！】** 年間 {avg_yearly_days:.1f} 日の予測です。実際の室戸岬での観測数（年間約10〜20日）と美しく一致しています！")
-        elif avg_yearly_days < 10:
-            st.info(f"💡 年间 {avg_yearly_days:.1f} 日の予測です。条件が厳しめで、完璧な「本物のだるま夕日」に絞り込んだ設定です。")
-        else:
-            st.error(f"🔺 年間 {avg_yearly_days:.1f} 日の予測です。発生数が少し多めです。条件をもう少し厳しく見直してみましょう。")
-
-        st.markdown("---")
-        st.markdown("#### 📅 月別の発生予想（4シーズンの合計）")
-        
-        season_months = [10, 11, 12, 1, 2, 3]
-        monthly_data = df_calc.groupby('月')['発生予測'].sum().reindex(season_months, fill_value=0).reset_index()
-        monthly_data['月表示'] = monthly_data['月'].astype(str) + '月'
-        monthly_summary = monthly_data.set_index('月表示')
-        
-        st.bar_chart(monthly_summary['発生予測'])
+    st.markdown("---")
+    st.markdown("#### 📅 月別の発生予想（4シーズンの合計）")
+    
+    season_months = [10, 11, 12, 1, 2, 3]
+    monthly_data = df.groupby('月')['発生予測'].sum().reindex(season_months, fill_value=0).reset_index()
+    monthly_data['月表示'] = monthly_data['月'].astype(str) + '月'
+    monthly_summary = monthly_data.set_index('月表示')
+    
+    st.bar_chart(monthly_summary['発生予測'])
 
 # ------------------------------------------
 # タブ3：日付ピンポイント検索
 # ------------------------------------------
 with tab3:
     st.subheader("🔎 特定の日のデータを確かめる")
-    
-    if df_calc is not None:
-        selected_date = st.date_input("日付を選択", value=datetime.date(2021, 10, 20))
-        date_str = selected_date.strftime('%Y-%m-%d')
-        target_data = df_calc[df_calc['日付'] == date_str]
+    selected_date = st.date_input("日付を選択", value=datetime.date(2021, 10, 20))
+    date_str = selected_date.strftime('%Y-%m-%d')
+    target_data = df[df['日付'] == date_str]
 
-        if len(target_data) > 0:
-            row = target_data.iloc[0]
-            st.write(f"**【{date_str} の室戸岬の観測データ】**")
-            
-            col_a, col_b, col_c = st.columns(3)
-            col_a.metric("気温 / 海水温", f"{row['気温']}℃ / {row['海水温']}℃")
-            col_a.metric("温度差", f"{row['温度差']:.1f}℃")
-            
-            col_b.metric("風向・風速", f"{row['風向']} {row['風速']}m/s")
-            col_b.metric("雲量", f"{row['雲量']}％")
-            
-            col_c.metric("計算された発生確率", f"{row['発生確率']:.1f}％")
+    if len(target_data) > 0:
+        row = target_data.iloc[0]
+        st.write(f"**【{date_str} の室戸岬の観測データ】**")
+        
+        col_a, col_b = st.columns(2)
+        col_a.metric("気温 / 海水温", f"{row['気温']}℃ / {row['海水温']}℃")
+        col_a.metric("温度差", f"{row['温度差']:.1f}℃")
+        col_b.metric("風", f"{row['風向']} {row['風速']}m/s")
+        col_b.metric("雲量", f"{row['雲量']}％")
 
-            st.markdown("---")
-            if row['発生予測'] == 1:
-                st.success(f"🎉 **発生可能性【高】** （計算確率: {row['発生確率']:.1f}% / ボーダー: {threshold_prob}%）")
-            else:
-                st.error(f"❄️ **発生可能性【低】** （計算確率: {row['発生確率']:.1f}% / ボーダー: {threshold_prob}%）")
-                
-                # 不成立の分析
-                reasons = []
-                if row['温度差'] <= 0:
-                    reasons.append(f"・【蜃気楼不成立】海水温より気温が高いため（温度差 {row['温度差']:.1f}℃）、屈折が起きません。")
-                elif row['温度差'] < threshold_temp:
-                    reasons.append(f"・【温度差不足】温度差（{row['温度差']:.1f}℃）が目標（{threshold_temp}℃）より低いため低得点です。")
-                if row['雲量'] > threshold_clouds:
-                    reasons.append(f"・【雲量超過】雲量（{row['雲量']}%）が多く、夕日が見えにくい状態です。")
-                if not row['風向'].isin(selected_wind_dirs):
-                    reasons.append(f"・【風向不適合】風向（{row['風向']}）が対象グループ外です。")
-                
-                if reasons:
-                    st.info("**【理科的アドバイス】**\n" + "\n".join(reasons))
+        st.markdown("---")
+        if total_weight != 100:
+            st.warning("合計配点を100点に設定すると、この日のスコア判定が表示されます。")
+        elif row['発生予測'] == 1:
+            st.success(f"🎉 **発生可能性【大】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
         else:
-            st.warning("この日付のデータはありません。")
+            st.error(f"❄️ **発生可能性【低】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
+            # 温度差はあるが雲量等で不合格になった場合のアドバイスメッセージ
+            if row['score_temp'] >= weight_temp * 0.8 and row['雲量'] > threshold_clouds:
+                st.info(f"💡 **現地観測のポイント**: この日は温度差（{row['温度差']:.1f}℃）が十分あります！データ上の雲量は{row['雲量']}％ですが、**西の水平線ぎりぎりさえ開けていれば見られた可能性が高い日**です！")
+    else:
+        st.warning("この日付のデータはありません。")
 
 # ------------------------------------------
-# タブ4：今日・明日の夕日予報（実践モード）
+# タブ4：今日の夕日予報（実践モード）
 # ------------------------------------------
 with tab4:
-    st.subheader("🔮 天気予報データから「今日のだるま夕日」を予報しよう！")
-    st.caption("天気予報（気象庁やウェザーニュース等）で調べた今日の予想数値を入力して、リアルタイム遭遇確率を計算してみよう。")
+    st.subheader("🔮 天気予報の数値を入れて「今日の発生確率」を計算しよう！")
+    st.caption("「① 条件を設定する」タブで設定したあなたの発生ルールを使って、今日や明日の天気予報から遭遇確率を計算します。")
 
     st.markdown("---")
-    c1, c2 = st.columns(2)
-    
-    with c1:
-        st.markdown("##### 📝 今日の天気予報数値を入力")
-        input_temp = st.number_input("予想気温 (℃)", value=12.0, step=0.5)
-        input_sea_temp = st.number_input("推定海水温 (℃)", value=18.0, step=0.5, help="※室戸沖の冬の海水温は17〜20℃前後")
-        input_cloud = st.slider("予想雲量 (%)", 0, 100, 15)
-        input_wind_dir = st.selectbox("予想風向", ["北", "北北西", "北西", "西北西", "西", "西南西", "南西", "南南西", "南", "南南東", "南東", "東南東", "東", "東北東", "北東", "北北東"], index=2)
-        input_wind_speed = st.number_input("予想風速 (m/s)", value=3.5, step=0.5)
 
-    # リアルタイムグラデーション計算
-    input_diff = input_sea_temp - input_temp
-    is_possible = input_diff > 0.0
-    
-    # スコア計算
-    s_temp = np.clip((input_diff / threshold_temp) * 100.0, 0.0, 100.0) if is_possible else 0.0
-    s_cloud = np.maximum(0.0, 100.0 - np.maximum(0.0, input_cloud - threshold_clouds) * 2.0)
-    
-    d_ok = input_wind_dir in selected_wind_dirs
-    w_ok = min_wind <= input_wind_speed <= max_wind
-    s_wind = 100.0 if (d_ok and w_ok) else (50.0 if (d_ok or w_ok) else 10.0)
-    
-    calc_prob = (s_temp * 0.4 + s_cloud * 0.4 + s_wind * 0.2) if is_possible else 0.0
+    if total_weight != 100:
+        st.warning("⚠️ まずは「① 条件を設定する」タブで、合計配点をぴったり100点に設定してください！")
+    else:
+        c1, c2 = st.columns([5, 5])
+        
+        with c1:
+            with st.container(border=True):
+                st.markdown("##### 📝 今日の天気予報数値を入力")
+                input_temp = st.number_input("予想気温 (℃)", value=12.0, step=0.5)
+                input_sea_temp = st.number_input("推定海水温 (℃)", value=18.0, step=0.5, help="※室戸沖の冬の海水温は17〜20℃前後")
+                input_cloud = st.slider("予想雲量 (%)", 0, 100, 15)
+                input_wind_dir = st.selectbox(
+                    "予想風向", 
+                    ["北", "北北西", "北西", "西北西", "西", "西南西", "南西", "南南西", "南", "南南東", "南東", "東南東", "東", "東北東", "北東", "北北東"], 
+                    index=2
+                )
+                input_wind_speed = st.number_input("予想風速 (m/s)", value=3.5, step=0.5)
 
-    with c2:
-        st.markdown("##### 📊 リアルタイム予報判定")
+        # ----------------------------------
+        # 入力値に対するリアルタイムスコア計算
+        # （既存コードと完全に同一の数式ルール）
+        # ----------------------------------
+        input_diff = input_sea_temp - input_temp
         
-        st.metric("海水温と気温の差", f"{input_diff:.1f} ℃", delta="蜃気楼の発生条件あり" if is_possible else "温度差なし（不成立）", delta_color="normal" if is_possible else "inverse")
-        st.metric("今日のだるま夕日 遭遇確率", f"{calc_prob:.1f} ％")
-        
-        if calc_prob >= threshold_prob:
-            st.balloons()
-            st.success("🌅 **【絶好のチャンス！】今日のだるま夕日指数: ★★★**\n素晴らしい気象条件です！室戸岬の海岸へ向かう価値が大いにあります。")
-        elif calc_prob >= 40:
-            st.warning("⛅ **【ワンチャンスあり】今日のだるま夕日指数: ★★☆**\n条件の一部が少し惜しいですが、西の空の雲が抜ければ見られる可能性があります！")
+        # ① 温度差スコア
+        if input_diff >= threshold_temp:
+            s_temp = float(weight_temp)
         else:
-            st.error("🌧️ **【難しい】今日のだるま夕日指数: ★☆☆**\n気象条件が整っておらず、だるま型になる可能性は非常に低いです。")
+            s_temp = max(0.0, float(weight_temp) * (1.0 - (threshold_temp - input_diff) / temp_margin))
+
+        # ② 雲量スコア
+        if input_cloud <= threshold_clouds:
+            s_cloud = float(weight_clouds)
+        else:
+            s_cloud = max(0.0, float(weight_clouds) * (1.0 - (input_cloud - threshold_clouds) / cloud_margin))
+
+        # ③ 風スコア
+        if min_wind <= input_wind_speed <= max_wind:
+            w_speed_score = 1.0
+        elif input_wind_speed < min_wind:
+            w_speed_score = max(0.0, 1.0 - (min_wind - input_wind_speed) / 0.5)
+        else:
+            w_speed_score = max(0.0, 1.0 - (input_wind_speed - max_wind) / 1.5)
+
+        w_dir_factor = 1.0 if input_wind_dir in selected_wind_dirs else 0.0
+        s_wind = w_speed_score * w_dir_factor * float(weight_wind)
+
+        # 総合予測スコア
+        input_score = s_temp + s_cloud + s_wind
+
+        with c2:
+            with st.container(border=True):
+                st.markdown("##### 📊 リアルタイムスコア判定")
+                
+                st.metric("海水温と気温の差", f"{input_diff:.1f} ℃")
+                st.metric("本日の判定スコア", f"{input_score:.1f} 点 / 100点", f"合格ボーダー: {threshold_score}点")
+
+                st.markdown("---")
+                
+                if input_score >= threshold_score:
+                    st.balloons()
+                    st.success("🌅 **【絶好のチャンス！】今日のだるま夕日指数: ★★★**\n設定した合格ルールをクリアしています！室戸岬へ見に行く価値が大いにあります！")
+                elif input_score >= threshold_score * 0.8:
+                    st.warning("⛅ **【ワンチャンスあり】今日のだるま夕日指数: ★★☆**\n合格ボーダーまであと一歩です！西の空の雲が抜ければ見られる可能性があります。")
+                else:
+                    st.error("🌧️ **【難しい】今日のだるま夕日指数: ★☆☆**\n設定した合格条件に届いておらず、本日だるま夕日が見られる可能性は低いです。")
+
+                # 得点内訳の可視化
+                with st.expander("🔍 スコアの内訳を見る"):
+                    st.write(f"- 温度差スコア: **{s_temp:.1f}** / {weight_temp}点")
+                    st.write(f"- 雲量スコア: **{s_cloud:.1f}** / {weight_clouds}点")
+                    st.write(f"- 風条件スコア: **{s_wind:.1f}** / {weight_wind}点")
