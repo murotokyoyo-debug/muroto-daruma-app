@@ -64,7 +64,7 @@ with tab1:
         st.warning(f"⚠️ 現在の合計配点： **{total_weight}点**（あと {100 - total_weight} 点 調整が必要です）")
 
 # ==========================================
-# 📊 シミュレーション計算ロジック（厳格AND判定化）
+# 📊 シミュレーション計算ロジック
 # ==========================================
 df['温度差'] = df['海水温'] - df['気温']
 
@@ -76,7 +76,7 @@ df['score_temp'] = np.where(
     np.maximum(0.0, weight_temp * (1.0 - (threshold_temp - df['温度差']) / temp_margin))
 )
 
-# ② 雲量：夕日観測には致命的なため、基準+10%を超えたら急速に0点化
+# ② 雲量：基準+10%を超えたら急速に0点化
 cloud_margin = 10.0
 df['score_clouds'] = np.where(
     df['雲量'] <= threshold_clouds,
@@ -84,7 +84,7 @@ df['score_clouds'] = np.where(
     np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
 )
 
-# ③ 風条件：風速の範囲外は厳しくカット
+# ③ 風条件：風向きによる減点をメリハリ化（北〜北西以外は厳しく評価）
 wind_speed_score = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
     1.0,
@@ -97,20 +97,19 @@ wind_speed_score = np.where(
 
 wind_direction_multipliers = {
     '北西': 1.0, '北北西': 1.0, '北': 1.0,
-    '西北西': 0.8, '北北東': 0.8,
-    '西': 0.6, '北東': 0.6,
-    '東北東': 0.3, '東': 0.3, '東南東': 0.3,
-    '南東': 0.3, '南南東': 0.3, '南': 0.3, '南南西': 0.3, '南西': 0.3, '西南西': 0.3
+    '西北西': 0.75, '北北東': 0.75,
+    '西': 0.5, '北東': 0.5,
+    '東北東': 0.1, '東': 0.1, '東南東': 0.1,
+    '南東': 0.1, '南南東': 0.1, '南': 0.1, '南南西': 0.1, '南西': 0.1, '西南西': 0.1
 }
-df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.3)
+df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.1)
 df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
 
 # 合計スコア
 df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
 
-# 💡 合格ラインを 85.0 点に引き上げ！
-# （これにより「3つの条件すべて」が良好でないと合格できなくなります）
-threshold_score = 85.0
+# 💡 合格ラインを 90.0 点に引き上げて厳格化！
+threshold_score = 90.0
 
 if total_weight == 100:
     df['発生予測'] = np.where(df['予測スコア'] >= threshold_score, 1, 0)
