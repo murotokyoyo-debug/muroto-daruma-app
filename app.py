@@ -58,7 +58,6 @@ with tab1:
     with col1_temp:
         with st.container(border=True):
             st.markdown("##### 🎯 合格基準（合格ライン）")
-            # 🎨 グラデーションバー ＋ ラベル
             st.markdown("""
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
                     <span style="color: #60a5fa;">🔵 差が小さい (発生しにくい)</span>
@@ -89,7 +88,6 @@ with tab1:
     with col1_clouds:
         with st.container(border=True):
             st.markdown("##### 🎯 合格基準（合格ライン）")
-            # 🎨 グラデーションバー ＋ ラベル
             st.markdown("""
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
                     <span style="color: #ff7849;">🌅 0% 快晴 (絶好の夕日)</span>
@@ -109,7 +107,7 @@ with tab1:
     st.markdown("---")
 
     # ==========================================
-    # --- ③ 風の条件 ---
+    # --- ③ 風の条件（風速 ＋ 風向選択） ---
     # ==========================================
     st.markdown("### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、北や北西からの冷たい季節風が吹くと発生しやすくなります。")
@@ -120,7 +118,6 @@ with tab1:
     with col1_wind:
         with st.container(border=True):
             st.markdown("##### 🎯 合格基準（合格ライン）")
-            # 🎨 グラデーションバー ＋ ラベル
             st.markdown("""
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px;">
                     <span style="color: #facc15;">🍃 0m/s 無風</span>
@@ -129,6 +126,8 @@ with tab1:
                 </div>
                 <div style="height: 8px; background: linear-gradient(to right, #facc15 0%, #a3e635 25%, #16a34a 100%); border-radius: 4px; margin-bottom: 12px;"></div>
             """, unsafe_allow_html=True)
+            
+            # ① 風速スライダー
             min_wind, max_wind = st.slider(
                 "適正な風の強さの範囲 (m/s)",
                 min_value=0.0,
@@ -136,6 +135,19 @@ with tab1:
                 value=(1.0, 9.0),
                 step=0.5,
                 help="※風が弱すぎても温床が作られず、強すぎても波で水平線が崩れてしまいます。"
+            )
+
+            st.markdown("---")
+
+            # ② 風向マルチセレクト（ポチポチ選べるタグ形式）
+            all_wind_dirs = ['北', '北北西', '北西', '西北西', '西', '西南西', '南西', '南南西', '南', '南南東', '南東', '東南東', '東', '東北東', '北東', '北北東']
+            default_wind_dirs = ['北', '北北西', '北西', '西北西']
+            
+            selected_wind_dirs = st.multiselect(
+                "🧭 合格とする風向きを選択（複数選べます）",
+                options=all_wind_dirs,
+                default=default_wind_dirs,
+                help="※クリックして風向きを追加・削除できます。"
             )
 
     # 右：配点カード
@@ -174,7 +186,7 @@ df['score_clouds'] = np.where(
     np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
 )
 
-# ③ 風条件判定
+# ③ 風条件判定（風速 ✕ ユーザーが選んだ風向）
 wind_speed_score = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
     1.0,
@@ -185,14 +197,8 @@ wind_speed_score = np.where(
     )
 )
 
-wind_direction_multipliers = {
-    '北西': 1.0, '北北西': 1.0, '北': 1.0,
-    '西北西': 0.6, '北北東': 0.6,
-    '西': 0.3, '北東': 0.3,
-    '東北東': 0.0, '東': 0.0, '東南東': 0.0,
-    '南東': 0.0, '南南東': 0.0, '南': 0.0, '南南西': 0.0, '南西': 0.0, '西南西': 0.0
-}
-df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.0)
+# 選択された風向に含まれていれば 1.0（満点対象）、含まれていなければ 0.0（0点）
+df['wind_dir_factor'] = np.where(df['風向'].isin(selected_wind_dirs), 1.0, 0.0)
 df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
 
 # 合計スコア計算
@@ -227,6 +233,8 @@ with tab2:
 
     if total_weight != 100:
         st.info("💡 まずは「① 条件を設定する」タブで、合計配点をぴったり100点にしてみよう！")
+    elif len(selected_wind_dirs) == 0:
+        st.warning("🧭 条件3の「風向き」が1つも選択されていません。風向きを1つ以上選んでみよう！")
     elif has_zero_weight:
         st.warning("📋 配点が0点の項目があります。だるま夕日は温度・雲・風のバランスが大切です！")
     elif is_initial_condition:
