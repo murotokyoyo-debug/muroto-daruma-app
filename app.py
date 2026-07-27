@@ -4,7 +4,7 @@ import numpy as np
 import datetime
 
 # 画面設定
-st.set_page_config(page_title="だるま夕日シミュレーター", page_icon="🌅", layout="wide")
+st.set_page_config(page_title="室戸岬 だるま夕日シミュレーター", page_icon="🌅", layout="wide")
 
 st.title("🌅 室戸岬 だるま夕日シミュレーター")
 st.caption("気象条件を組み合わせて、だるま夕日が見える日を予測してみよう！")
@@ -19,7 +19,7 @@ except Exception as e:
     st.stop()
 
 # ==========================================
-# 📱 タブを使ってスマホでも見やすく切り替え
+# 📱 タブ構成
 # ==========================================
 tab1, tab2, tab3 = st.tabs(["⚙️ ① 条件を設定する", "📈 ② 予測結果を見る", "🔎 ③ 日付で調べる"])
 
@@ -35,25 +35,25 @@ with tab1:
     # --- ① 温度差 ---
     st.markdown("#### 🌡️ 条件1：海と空気の温度差（下位蜃気楼の条件）")
     st.caption("※温かい海の上に冷たい空気が来ると、光が屈折して「だるま型」に見えます。")
-    threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 5.0, 0.5)
-    weight_temp = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=0, key="w_temp")
+    threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 5.0, 15.0, 7.0, 0.5)
+    weight_temp = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=40, key="w_temp")
 
     st.markdown("---")
 
     # --- ② 雲量 ---
     st.markdown("#### ☁️ 条件2：空の晴れぐあい（雲の量）")
     st.caption("※夕日が見えるためには、空に雲が少ないことが大切です。")
-    threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 100, 10)
-    weight_clouds = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=0, key="w_clouds")
+    threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 20, 10)
+    weight_clouds = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=40, key="w_clouds")
 
     st.markdown("---")
 
     # --- ③ 風の条件 ---
     st.markdown("#### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、北や北西からの冷たい季節風が吹くと発生しやすくなります。")
-    min_wind = st.slider("最低限必要な風の強さ (m/s)", 0.0, 5.0, 0.0, 0.5)
-    max_wind = st.slider("これ以上強いと波が立ちすぎる風速 (m/s)", 5.0, 20.0, 20.0, 0.5)
-    weight_wind = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=0, key="w_wind")
+    min_wind = st.slider("最低限必要な風の強さ (m/s)", 0.0, 5.0, 1.5, 0.5)
+    max_wind = st.slider("これ以上強いと波が立ちすぎる風速 (m/s)", 5.0, 20.0, 10.0, 0.5)
+    weight_wind = st.select_slider("この条件の重要度（配点）", options=list(range(0, 105, 5)), value=20, key="w_wind")
 
     # 配点チェック
     total_weight = weight_temp + weight_clouds + weight_wind
@@ -64,52 +64,53 @@ with tab1:
         st.warning(f"⚠️ 現在の合計配点： **{total_weight}点**（あと {100 - total_weight} 点 調整が必要です）")
 
 # ==========================================
-# 📊 シミュレーション計算ロジック
+# 📊 気象物理モデルに基づくリアル計算ロジック
 # ==========================================
 df['温度差'] = df['海水温'] - df['気温']
 
-# ① 温度差：基準より1.5℃低い範囲までで減点（それ以下は0点）
-temp_margin = 1.5
+# ① 温度差：下位蜃気楼の形成臨界点（基準より1.0℃未満になると急速に0点）
+temp_margin = 1.0
 df['score_temp'] = np.where(
     df['温度差'] >= threshold_temp,
     float(weight_temp),
     np.maximum(0.0, weight_temp * (1.0 - (threshold_temp - df['温度差']) / temp_margin))
 )
 
-# ② 雲量：基準+10%を超えたら急速に0点化
-cloud_margin = 10.0
+# ② 雲量：水平線遮蔽率（基準+5%を超えると視認困難になり急速に0点）
+cloud_margin = 5.0
 df['score_clouds'] = np.where(
     df['雲量'] <= threshold_clouds,
     float(weight_clouds),
     np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
 )
 
-# ③ 風条件：風向きによる減点をメリハリ化（北〜北西以外は厳しく評価）
+# ③ 風条件：風速の適正範囲判定
 wind_speed_score = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
     1.0,
     np.where(
         df['風速'] < min_wind,
         np.maximum(0.0, 1.0 - (min_wind - df['風速']) / 0.5),
-        np.maximum(0.0, 1.0 - (df['風速'] - max_wind) / 2.0)
+        np.maximum(0.0, 1.0 - (df['風速'] - max_wind) / 1.5)
     )
 )
 
+# 風向の気象学的重み付け（北〜北西以外は蜃気楼が立ちにくいため厳格化）
 wind_direction_multipliers = {
     '北西': 1.0, '北北西': 1.0, '北': 1.0,
-    '西北西': 0.75, '北北東': 0.75,
-    '西': 0.5, '北東': 0.5,
-    '東北東': 0.1, '東': 0.1, '東南東': 0.1,
-    '南東': 0.1, '南南東': 0.1, '南': 0.1, '南南西': 0.1, '南西': 0.1, '西南西': 0.1
+    '西北西': 0.6, '北北東': 0.6,
+    '西': 0.3, '北東': 0.3,
+    '東北東': 0.0, '東': 0.0, '東南東': 0.0,
+    '南東': 0.0, '南南東': 0.0, '南': 0.0, '南南西': 0.0, '南西': 0.0, '西南西': 0.0
 }
-df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.1)
+df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.0)
 df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
 
-# 合計スコア
+# 合計スコア計算
 df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
 
-# 💡 合格ラインを 90.0 点に引き上げて厳格化！
-threshold_score = 90.0
+# 合格判定ライン（92.0点：全条件がハイレベルで揃うこと）
+threshold_score = 92.0
 
 if total_weight == 100:
     df['発生予測'] = np.where(df['予測スコア'] >= threshold_score, 1, 0)
@@ -145,7 +146,7 @@ with tab2:
         st.warning("🔍 条件の基準（スライダー）が初期設定のままのようです。少し絞り込んでみましょう！")
     elif predicted_days == 0:
         st.warning("⚠️ 発生予測が0日になりました。条件が少し厳しすぎるかもしれません。")
-    # 4年間で 20日〜80日（年間 5日〜20日相当）を適正基準に設定
+    # 4年間で 20日〜80日（年間 5日〜20日相当）を現実の発生ペースとして適正判定
     elif 20 <= predicted_days <= 80:
         st.success(f"🟢 【素晴らしい！】年間 {avg_yearly_days:.1f} 日の予測です。実際の室戸岬の年間発生数（10〜20回前後）に極めて近いリアルな条件設定です！")
     elif predicted_days < 20:
