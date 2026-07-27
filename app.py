@@ -12,7 +12,6 @@ st.caption("気象条件を組み合わせて、だるま夕日が見える日�
 # データの読み込み
 try:
     df = pd.read_csv('muroto_history.csv')
-    # 日付の読み込み（シリアル値や異形式が混ざっていてもエラーにならないよう柔軟に変換）
     df['日付'] = pd.to_datetime(df['日付'], format='mixed', errors='coerce').dt.strftime('%Y-%m-%d')
     df['月'] = pd.to_datetime(df['日付']).dt.month
 except Exception as e:
@@ -65,33 +64,37 @@ with tab1:
         st.warning(f"⚠️ 現在の合計配点： **{total_weight}点**（あと {100 - total_weight} 点 調整が必要です）")
 
 # ==========================================
-# 📊 シミュレーション計算ロジック
+# 📊 シミュレーション計算ロジック（マイルド減点方式）
 # ==========================================
 df['温度差'] = df['海水温'] - df['気温']
 
-# ① 温度差スコア
-df['score_temp'] = np.where(df['温度差'] >= threshold_temp, 
-                            weight_temp, 
-                            np.maximum(0.0, (df['温度差'] / threshold_temp) * weight_temp))
-
-# ② 雲量スコア
-if threshold_clouds == 100:
-    df['score_clouds'] = weight_clouds
-else:
-    df['score_clouds'] = np.where(df['雲量'] <= threshold_clouds, 
-                                  weight_clouds, 
-                                  np.maximum(0.0, ((100 - df['雲量']) / (100 - threshold_clouds)) * weight_clouds))
-
-# ③ 風条件スコア
-df['wind_speed_factor'] = np.where(
-    (df['風速'] >= min_wind) & (df['風速'] <= max_wind), 
-    1.0,
-    np.where(df['風速'] < min_wind, 
-             np.maximum(0.0, df['風速'] / np.maximum(0.1, min_wind)),
-             np.maximum(0.0, 1.0 - (df['風速'] - max_wind) / 5.0))
+# ① 温度差：基準以上は満点、基準より2.0℃低い範囲までは「惜しい！」で点数を残す（それ以下は0点）
+temp_margin = 2.0
+df['score_temp'] = np.where(
+    df['温度差'] >= threshold_temp,
+    float(weight_temp),
+    np.maximum(0.0, weight_temp * (1.0 - (threshold_temp - df['温度差']) / temp_margin))
 )
 
-# 💡 風向きの倍率をマイルド化（一発アウトの0.0倍を廃止し、最低でも0.5倍確保）
+# ② 雲量：基準以下は満点、基準より+20%以内までは「惜しい！」で点数を残す（それ以上は0点）
+cloud_margin = 20.0
+df['score_clouds'] = np.where(
+    df['雲量'] <= threshold_clouds,
+    float(weight_clouds),
+    np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
+)
+
+# ③ 風条件：風速の範囲内なら満点、前後1.0m/sの範囲は減点して点数を残す
+wind_speed_score = np.where(
+    (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
+    1.0,
+    np.where(
+        df['風速'] < min_wind,
+        np.maximum(0.0, 1.0 - (min_wind - df['風速']) / 1.0),
+        np.maximum(0.0, 1.0 - (df['風速'] - max_wind) / 3.0)
+    )
+)
+
 wind_direction_multipliers = {
     '北西': 1.0, '北北西': 1.0, '北': 1.0,
     '西北西': 0.85, '北北東': 0.85,
@@ -100,12 +103,12 @@ wind_direction_multipliers = {
     '南東': 0.5, '南南東': 0.5, '南': 0.5, '南南西': 0.5, '南西': 0.5, '西南西': 0.5
 }
 df['wind_dir_factor'] = df['風向'].map(wind_direction_multipliers).fillna(0.5)
-df['score_wind'] = df['wind_speed_factor'] * df['wind_dir_factor'] * weight_wind
+df['score_wind'] = wind_speed_score * df['wind_dir_factor'] * weight_wind
 
 # 合計スコア
 df['予測スコア'] = df['score_temp'] + df['score_clouds'] + df['score_wind']
 
-# 合格ラインの設定（75点以上で合格）
+# 合格ラインは 75.0 点
 threshold_score = 75.0
 
 if total_weight == 100:
