@@ -59,7 +59,6 @@ with tab1:
     
     col1_temp, col2_temp = st.columns([7, 3])
     
-    # 左：合格基準カード
     with col1_temp:
         with st.container(border=True):
             st.markdown("##### 🎯 合格基準（条件設定）")
@@ -72,7 +71,6 @@ with tab1:
             """, unsafe_allow_html=True)
             threshold_temp = st.slider("海水温が気温より何℃以上高いと合格？", 0.0, 15.0, 0.0, 0.5)
 
-    # 右：配点カード
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
@@ -89,7 +87,6 @@ with tab1:
     
     col1_clouds, col2_clouds = st.columns([7, 3])
     
-    # 左：合格基準カード
     with col1_clouds:
         with st.container(border=True):
             st.markdown("##### 🎯 合格基準（条件設定）")
@@ -102,7 +99,6 @@ with tab1:
             """, unsafe_allow_html=True)
             threshold_clouds = st.slider("雲の量は何％以下なら合格？", 0, 100, 100, 10)
 
-    # 右：配点カード
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
@@ -112,14 +108,13 @@ with tab1:
     st.markdown("---")
 
     # ==========================================
-    # --- ③ 風の条件 ---
+    # --- ③ 風の条件（簡素化版） ---
     # ==========================================
     st.markdown("### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、風の向きや強さによって水平線付近の空気の状態が変わります。")
     
     col1_wind, col2_wind = st.columns([7, 3])
     
-    # 左：合格基準カード
     with col1_wind:
         with st.container(border=True):
             st.markdown("##### 🎯 合格基準（条件設定）")
@@ -142,38 +137,28 @@ with tab1:
             )
 
             st.markdown("---")
-            st.markdown("**🧭 合格とする風向きを選択（チェックを入れてね）**")
+            st.markdown("**🧭 合格とする風の向きを選択（複数えらべます）**")
 
-            default_wind_dirs = []
+            # 4グループに簡素化した選択肢
+            wind_group_mapping = {
+                "🍃 陸からの風 (北・北北西・北西・西北西)": ["北", "北北西", "北西", "西北西"],
+                "🌊 西寄りの風 (西・西南西)": ["西", "西南西"],
+                "☁️ 沖・海からの風 (南西・南南西・南・南南東・南東)": ["南西", "南南西", "南", "南南東", "南東"],
+                "💨 東寄りの風 (東南東・東・東北東・北東・北北東)": ["東南東", "東", "東北東", "北東", "北北東"]
+            }
+
+            selected_groups = st.multiselect(
+                "風向きのグループを選択",
+                options=list(wind_group_mapping.keys()),
+                default=[],
+                placeholder="クリックして風向きグループを選択..."
+            )
+
+            # 選択されたグループから16方位リストを展開
             selected_wind_dirs = []
+            for group in selected_groups:
+                selected_wind_dirs.extend(wind_group_mapping[group])
 
-            wc1, wc2, wc3, wc4 = st.columns(4)
-
-            with wc1:
-                if st.checkbox("北", value=("北" in default_wind_dirs)): selected_wind_dirs.append("北")
-                if st.checkbox("北北西", value=("北北西" in default_wind_dirs)): selected_wind_dirs.append("北北西")
-                if st.checkbox("北西", value=("北西" in default_wind_dirs)): selected_wind_dirs.append("北西")
-                if st.checkbox("西北西", value=("西北西" in default_wind_dirs)): selected_wind_dirs.append("西北西")
-
-            with wc2:
-                if st.checkbox("西", value=("西" in default_wind_dirs)): selected_wind_dirs.append("西")
-                if st.checkbox("西南西", value=("西南西" in default_wind_dirs)): selected_wind_dirs.append("西南西")
-                if st.checkbox("南西", value=("南西" in default_wind_dirs)): selected_wind_dirs.append("南西")
-                if st.checkbox("南南西", value=("南南西" in default_wind_dirs)): selected_wind_dirs.append("南南西")
-
-            with wc3:
-                if st.checkbox("南", value=("南" in default_wind_dirs)): selected_wind_dirs.append("南")
-                if st.checkbox("南南東", value=("南南東" in default_wind_dirs)): selected_wind_dirs.append("南南東")
-                if st.checkbox("南東", value=("南東" in default_wind_dirs)): selected_wind_dirs.append("南東")
-                if st.checkbox("東南東", value=("東南東" in default_wind_dirs)): selected_wind_dirs.append("東南東")
-
-            with wc4:
-                if st.checkbox("東", value=("東" in default_wind_dirs)): selected_wind_dirs.append("東")
-                if st.checkbox("東北東", value=("東北東" in default_wind_dirs)): selected_wind_dirs.append("東北東")
-                if st.checkbox("北東", value=("北東" in default_wind_dirs)): selected_wind_dirs.append("北東")
-                if st.checkbox("北北東", value=("北北東" in default_wind_dirs)): selected_wind_dirs.append("北北東")
-
-    # 右：配点カード ＋ ヒントコラム
     with col2_wind:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
@@ -183,10 +168,10 @@ with tab1:
         with st.container(border=True):
             st.markdown("##### 💡 風向きを考えるヒント")
             st.markdown("""
-            * **陸側から吹く風（山越えの風）**  
+            * **陸からの風（山越えの風）**  
               四国山地を越えて届くため、冷たく乾いた空気の層を海の上に作りやすくなります。
-            * **海側から吹く風（沖からの風）**  
-              太平洋から湿った暖かい風が吹き込むため、水蒸気で雲や霧が発生しやすくなります。
+            * **沖・海からの風**  
+              太平洋から湿った風が吹き込むため、水蒸気で雲や霧が発生しやすくなります。
             """)
 
     # 配点チェック
@@ -263,7 +248,7 @@ with tab2:
     if total_weight != 100:
         st.info("💡 まずは「① 条件を設定する」タブで、合計配点をぴったり100点にしてみよう！")
     elif len(selected_wind_dirs) == 0:
-        st.warning("🧭 条件3の「風向き」のチェックが1つも入っていません。風向きを1つ以上選んでみよう！")
+        st.warning("🧭 条件3の「風向き」グループが1つも選ばれていません。1つ以上選んでみよう！")
     elif has_zero_weight:
         st.warning("📋 配点が0点の項目があります。だるま夕日は温度・雲・風のバランスが大切です！")
     elif is_initial_condition:
@@ -383,7 +368,6 @@ with tab4:
 
                 st.markdown("---")
                 
-                # 判定メッセージ（スッキリしたトーン）
                 if input_score >= threshold_score:
                     st.success("🌅 **【絶好のチャンス！】今日のだるま夕日指数: ★★★**\n設定した合格ルールをクリアしています！室戸岬へ見に行く価値が大いにあります！")
                 elif input_score >= threshold_score * 0.8:
