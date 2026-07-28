@@ -266,11 +266,16 @@ with tab2:
     st.bar_chart(monthly_summary['発生予測'])
 
 # ------------------------------------------
-# タブ3：日付ピンポイント検索
+# タブ3：日付ピンポイント検索（2021年〜2026年に選択範囲を限定）
 # ------------------------------------------
 with tab3:
     st.subheader("🔎 特定の日のデータを確かめる")
-    selected_date = st.date_input("日付を選択", value=datetime.date(2021, 10, 20))
+    selected_date = st.date_input(
+        "日付を選択", 
+        value=datetime.date(2021, 10, 20),
+        min_value=datetime.date(2021, 1, 1),
+        max_value=datetime.date(2026, 12, 31)
+    )
     date_str = selected_date.strftime('%Y-%m-%d')
     target_data = df[df['日付'] == date_str]
 
@@ -294,7 +299,7 @@ with tab3:
             if row['score_temp'] >= weight_temp * 0.8 and row['雲量'] > threshold_clouds:
                 st.info(f"💡 **現地観測のポイント**: この日は温度差（{row['温度差']:.1f}℃）が十分あります！データ上の雲量は{row['雲量']}％ですが、**西の水平線ぎりぎりさえ開けていれば見られた可能性が高い日**です！")
     else:
-        st.warning("この日付のデータはありません。")
+        st.warning("⚠️ この日付の観測データは登録されていません（※観測データは主に10月〜3月です）。")
 
 # ------------------------------------------
 # タブ4：今日の夕日予報（実践モード）
