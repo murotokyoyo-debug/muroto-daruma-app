@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import datetime
+import calendar
 
 # 画面設定
 st.set_page_config(page_title="室戸だるま夕日シュミレーター", page_icon="🌅", layout="wide")
@@ -266,18 +267,44 @@ with tab2:
     st.bar_chart(monthly_summary['発生予測'])
 
 # ------------------------------------------
-# タブ3：日付ピンポイント検索（2021年〜2026年に選択範囲を限定）
+# タブ3：日付ピンポイント検索（年：2021~2026、月：10~3月に限定）
 # ------------------------------------------
 with tab3:
     st.subheader("🔎 特定の日のデータを確かめる")
-    selected_date = st.date_input(
-        "日付を選択", 
-        value=datetime.date(2021, 10, 20),
-        min_value=datetime.date(2021, 1, 1),
-        max_value=datetime.date(2026, 12, 31)
-    )
+    st.caption("※だるま夕日の観測シーズン（10月〜3月）の日付を選択できます。")
+
+    # 年・月・日を3つのプルダウンで選択
+    col_y, col_m, col_d = st.columns(3)
+    
+    with col_y:
+        selected_year = st.selectbox("年を選択", [2021, 2022, 2023, 2024, 2025, 2026], index=0)
+        
+    with col_m:
+        # 10月〜3月のみに選択肢を限定
+        selected_month = st.selectbox(
+            "月を選択（シーズン限定）", 
+            [10, 11, 12, 1, 2, 3], 
+            index=0, 
+            format_func=lambda x: f"{x}月"
+        )
+
+    # 選択された年・月の日数を自動計算（2月の28/29日などにも正確に対応）
+    _, max_days = calendar.monthrange(selected_year, selected_month)
+
+    with col_d:
+        selected_day = st.selectbox(
+            "日を選択", 
+            list(range(1, max_days + 1)), 
+            index=19 if max_days >= 20 else 0,
+            format_func=lambda x: f"{x}日"
+        )
+
+    # 選択された日付の作成とデータ照会
+    selected_date = datetime.date(selected_year, selected_month, selected_day)
     date_str = selected_date.strftime('%Y-%m-%d')
     target_data = df[df['日付'] == date_str]
+
+    st.markdown("---")
 
     if len(target_data) > 0:
         row = target_data.iloc[0]
@@ -299,7 +326,7 @@ with tab3:
             if row['score_temp'] >= weight_temp * 0.8 and row['雲量'] > threshold_clouds:
                 st.info(f"💡 **現地観測のポイント**: この日は温度差（{row['温度差']:.1f}℃）が十分あります！データ上の雲量は{row['雲量']}％ですが、**西の水平線ぎりぎりさえ開けていれば見られた可能性が高い日**です！")
     else:
-        st.warning("⚠️ この日付の観測データは登録されていません（※観測データは主に10月〜3月です）。")
+        st.warning(f"⚠️ **{date_str}** の観測データはファイルに登録されていません（※未観測または今後追加予定の期間です）。")
 
 # ------------------------------------------
 # タブ4：今日の夕日予報（実践モード）
