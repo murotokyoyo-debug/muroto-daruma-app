@@ -108,7 +108,7 @@ with tab1:
     st.markdown("---")
 
     # ==========================================
-    # --- ③ 風の条件（簡素化版） ---
+    # --- ③ 風の条件（4グループのチェックボックス式） ---
     # ==========================================
     st.markdown("### 🌬️ 条件3：風の強さと向き")
     st.caption("※室戸では、風の向きや強さによって水平線付近の空気の状態が変わります。")
@@ -137,27 +137,20 @@ with tab1:
             )
 
             st.markdown("---")
-            st.markdown("**🧭 合格とする風の向きを選択（複数えらべます）**")
+            st.markdown("**🧭 合格とする風向きを選択（チェックを入れてね）**")
 
-            # 4グループに簡素化した選択肢
-            wind_group_mapping = {
-                "🍃 陸からの風 (北・北北西・北西・西北西)": ["北", "北北西", "北西", "西北西"],
-                "🌊 西寄りの風 (西・西南西)": ["西", "西南西"],
-                "☁️ 沖・海からの風 (南西・南南西・南・南南東・南東)": ["南西", "南南西", "南", "南南東", "南東"],
-                "💨 東寄りの風 (東南東・東・東北東・北東・北北東)": ["東南東", "東", "東北東", "北東", "北北東"]
-            }
+            # 4つの分かりやすいチェックボックス
+            cb_land = st.checkbox("🍃 陸からの風 (北・北北西・北西・西北西)")
+            cb_west = st.checkbox("🌊 西寄りの風 (西・西南西)")
+            cb_sea  = st.checkbox("☁️ 沖・海からの風 (南西・南南西・南・南南東・南東)")
+            cb_east = st.checkbox("💨 東寄りの風 (東南東・東・東北東・北東・北北東)")
 
-            selected_groups = st.multiselect(
-                "風向きのグループを選択",
-                options=list(wind_group_mapping.keys()),
-                default=[],
-                placeholder="クリックして風向きグループを選択..."
-            )
-
-            # 選択されたグループから16方位リストを展開
+            # チェックに合わせて16方位リストを展開
             selected_wind_dirs = []
-            for group in selected_groups:
-                selected_wind_dirs.extend(wind_group_mapping[group])
+            if cb_land: selected_wind_dirs.extend(["北", "北北西", "北西", "西北西"])
+            if cb_west: selected_wind_dirs.extend(["西", "西南西"])
+            if cb_sea:  selected_wind_dirs.extend(["南西", "南南西", "南", "南南東", "南東"])
+            if cb_east: selected_wind_dirs.extend(["東南東", "東", "東北東", "北東", "北北東"])
 
     with col2_wind:
         with st.container(border=True):
@@ -248,7 +241,7 @@ with tab2:
     if total_weight != 100:
         st.info("💡 まずは「① 条件を設定する」タブで、合計配点をぴったり100点にしてみよう！")
     elif len(selected_wind_dirs) == 0:
-        st.warning("🧭 条件3の「風向き」グループが1つも選ばれていません。1つ以上選んでみよう！")
+        st.warning("🧭 条件3の「風向き」のチェックが1つも入っていません。1つ以上選んでみよう！")
     elif has_zero_weight:
         st.warning("📋 配点が0点の項目があります。だるま夕日は温度・雲・風のバランスが大切です！")
     elif is_initial_condition:
