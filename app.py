@@ -77,7 +77,7 @@ with tab1:
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v11")
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v13")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -105,7 +105,7 @@ with tab1:
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v11")
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v13")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -157,7 +157,7 @@ with tab1:
     with col2_wind:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v11")
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v13")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
         with st.container(border=True):
@@ -262,26 +262,29 @@ with tab2:
         st.info("💡 すべての風向きが選ばれています。室戸岬でだるま夕日が見えやすい『決まった風向き』が無いか考えて絞り込んでみよう！")
 
     elif is_sea_or_west:
-        st.warning(f"🤔 年間 {avg_yearly_days:.1f} 日という計算結果になりましたが、太平洋（海）からの風は湿気を含んで西の水平線に雲が出やすくなります。『陸からの風』と発生日数を比べてみよう！")
+        st.warning(f"🤔 年間平均 {avg_yearly_days:.1f} 日の計算結果になりましたが、太平洋（海）からの風は湿気を含んで西の水平線に雲が出やすくなります。『陸からの風』と発生日数を比べてみよう！")
 
     elif is_east_only:
-        st.warning(f"🤔 年間 {avg_yearly_days:.1f} 日の計算結果ですが、東寄りの風は低気圧が近づいて天気が下り坂（雨や曇り）になる時によく吹く風です。『陸からの風』と比べてみよう！")
+        st.warning(f"🤔 年間平均 {avg_yearly_days:.1f} 日の計算結果ですが、東寄りの風は低気圧が近づいて天気が下り坂（雨や曇り）になる時によく吹く風です。『陸からの風』と比べてみよう！")
 
-    # 📊 日数に基づく最終フィードバック
+    # 📊 指定文言に基づくフィードバック判定
     elif predicted_days == 0:
         st.warning("⚠️ 発生予測が0日になりました。条件（特に温度差や風速の範囲）が少し厳しすぎるかもしれません。")
 
-    elif 20 <= predicted_days <= 80:
+    elif avg_yearly_days > 18.0:
+        st.error(f"🔺 **【多いかも？】** 年間平均 {avg_yearly_days:.1f} 日の予測です。発生予測日数が少し多めです。もう少し条件を絞り込んでみよう！")
+
+    elif 15.0 <= avg_yearly_days <= 18.0:
         if is_only_land:
-            st.success(f"🟢 【大正解・素晴らしい！】年間 {avg_yearly_days:.1f} 日の予測です！山を越える『陸からの風』に着目した、実際の室戸岬に極めて近いリアルな条件設定です！")
+            st.success(f"🟢 **【ちょうどいい感じ！】** 年間平均 {avg_yearly_days:.1f} 日の予測です。より実感に近い発生予測日数！（山を越える『陸からの風』に着目した素晴らしい設定です）")
         else:
-            st.success(f"🟢 【素晴らしい！】年間 {avg_yearly_days:.1f} 日の予測です。実際の室戸岬の年間発生数（10〜20回前後）に近い条件設定です！")
+            st.success(f"🟢 **【ちょうどいい感じ！】** 年間平均 {avg_yearly_days:.1f} 日の予測です。より実感に近い発生予測日数！")
 
-    elif predicted_days < 20:
-        st.warning(f"💡 年間 {avg_yearly_days:.1f} 日の予測です。かなり厳しい条件ですが、完璧な「本物のだるま夕日」に絞った条件と言えます。")
+    elif 10.0 <= avg_yearly_days < 15.0:
+        st.success(f"🟢 **【いい感じ！】** 年間平均 {avg_yearly_days:.1f} 日の予測です。実感に近い発生予測日数です！")
 
-    else:
-        st.error(f"🔺 年間 {avg_yearly_days:.1f} 日の予測です。発生数が多すぎます！もう少し条件を厳しく設定してみましょう。")
+    else: # avg_yearly_days < 10.0
+        st.warning(f"💡 **【かなり厳しい？】** 年間平均 {avg_yearly_days:.1f} 日の予測です。発生予測日数が年に数回の限定的な設定です。")
 
     st.markdown("---")
     st.markdown("#### 📅 月別の発生予想（4シーズンの合計）")
@@ -341,7 +344,7 @@ with tab3:
 
         st.markdown("---")
         
-        # 配点・判定エリア（★表記と文言を「今日の夕日予報」と統一）
+        # 配点・判定エリア
         if total_weight != 100:
             st.warning("合計配点を100点に設定すると、この日のスコア判定が表示されます。")
         elif len(selected_wind_dirs) == 0:
