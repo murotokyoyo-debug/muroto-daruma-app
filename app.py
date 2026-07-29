@@ -77,7 +77,7 @@ with tab1:
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v9")
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v11")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -105,7 +105,7 @@ with tab1:
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v9")
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v11")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -157,7 +157,7 @@ with tab1:
     with col2_wind:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v9")
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v11")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
         with st.container(border=True):
@@ -340,20 +340,34 @@ with tab3:
         col_b.metric("雲量", f"{row['雲量']}％")
 
         st.markdown("---")
+        
+        # 配点・判定エリア（★表記と文言を「今日の夕日予報」と統一）
         if total_weight != 100:
             st.warning("合計配点を100点に設定すると、この日のスコア判定が表示されます。")
         elif len(selected_wind_dirs) == 0:
             st.warning("風向きのチェックを入れてください。")
-        elif row['発生予測'] == 1:
-            st.success(f"🎉 **発生可能性【大】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
+        
+        # 🌅【★★★】絶好のチャンス！（92点以上）
+        elif row['予測スコア'] >= threshold_score:
+            st.success(f"🌅 **【絶好のチャンス！】だるま夕日指数: ★★★** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）\n\n設定した合格ルールをクリアしている絶好の日です！")
             if not row['wind_dir_match']:
                 st.info(f"💡 **ワンポイント**: 風向「{row['風向']}」は設定外のため風の配点が減点されていますが、温度差や晴れぐあいが非常に優れているため合格判定となりました！")
-        else:
-            st.error(f"❄️ **発生可能性【低】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
+        
+        # ⛅【★★☆】ワンチャンスあり（80点以上 92点未満）
+        elif row['予測スコア'] >= 80.0:
+            st.warning(f"⛅ **【ワンチャンスあり】だるま夕日指数: ★★☆** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）\n\n**とても運が良ければだるま夕日が見られるかも！？** 合格ボーダーまであと一歩の条件です。")
             if not row['wind_dir_match']:
-                st.info(f"💡 **おしい！**: この日の風向「**{row['風向']}**」は設定した風向きグループに含まれていないため、風のスコアが大きく減点されています。")
+                st.info(f"💡 **惜しい理由**: この日の風向「**{row['風向']}**」は設定した風向きグループに含まれていないため、風のスコアが大きく減点されています。")
+            elif row['雲量'] > threshold_clouds:
+                st.info(f"💡 **惜しい理由**: 雲量が{row['雲量']}％と少し高めです。日没直前に西の水平線ぎりぎりさえ晴れていれば、見られた可能性があります！")
+        
+        # 🌧️【★☆☆】難しい（80点未満）
+        else:
+            st.error(f"🌧️ **【難しい】だるま夕日指数: ★☆☆** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）\n\n設定した合格条件に届いておらず、この日にだるま夕日が見られる可能性は低いです。")
+            if not row['wind_dir_match']:
+                st.info(f"💡 **ポイント**: この日の風向「**{row['風向']}**」は設定した風向きグループに含まれていないため、風のスコアが大きく減点されています。")
             elif row['score_temp'] >= weight_temp * 0.8 and row['雲量'] > threshold_clouds:
-                st.info(f"💡 **現地観測のポイント**: 温度差（{row['温度差']:.1f}℃）や風条件は良好です！雲量は{row['雲量']}％ですが、**西の水平線ぎりぎりさえ開けていれば見られた可能性が高い日**です！")
+                st.info(f"💡 **現地観測のポイント**: 温度差（{row['温度差']:.1f}℃）や風条件は良好です！雲量は{row['雲量']}％ですが、西の水平線が開けていれば見られた可能性はあります。")
     else:
         st.warning(f"⚠️ **{date_str}** の観測データはファイルに登録されていません。")
 
@@ -427,7 +441,7 @@ with tab4:
                 if input_score >= threshold_score:
                     st.success("🌅 **【絶好のチャンス！】今日のだるま夕日指数: ★★★**\n設定した合格ルールをクリアしています！室戸岬へ見に行く価値が大いにあります！")
                 elif input_score >= threshold_score * 0.8:
-                    st.warning("⛅ **【ワンチャンスあり】今日のだるま夕日指数: ★★☆**\n合格ボーダーまであと一歩です！西の空の雲が抜ければ見られる可能性があります。")
+                    st.warning("⛅ **【ワンチャンスあり】今日のだるま夕日指数: ★★☆**\nとても運が良ければ見られるかも！？合格ボーダーまであと一歩の条件です。")
                 else:
                     st.error("🌧️ **【難しい】今日のだるま夕日指数: ★☆☆**\n設定した合格条件に届いておらず、本日だるま夕日が見られる可能性は低いです。")
 
