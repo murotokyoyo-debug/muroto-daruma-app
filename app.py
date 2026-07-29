@@ -77,7 +77,7 @@ with tab1:
     with col2_temp:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v8")
+            weight_temp = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_temp_v9")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_temp} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -105,7 +105,7 @@ with tab1:
     with col2_clouds:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v8")
+            weight_clouds = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_clouds_v9")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_clouds} 点 / 100点</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -141,7 +141,7 @@ with tab1:
 
             st.markdown("---")
             st.markdown("**🧭 合格（満点）とする風向きを選択**")
-            st.caption("※選ばなかった風向きの日は、風の点数が「30%」に下降補正（減点）されます。")
+            st.caption("※だるま夕日が発生しずらくなる風向きを選ぶと大きく減点されます。")
 
             cb_land = st.checkbox("🍃 陸からの風 (北・北北西・北西・西北西)")
             cb_west = st.checkbox("🌊 西寄りの風 (西・西南西)")
@@ -157,7 +157,7 @@ with tab1:
     with col2_wind:
         with st.container(border=True):
             st.markdown("##### ⚖️ 重要度（配点）")
-            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v8")
+            weight_wind = st.select_slider("この条件の配点", options=list(range(0, 105, 5)), value=0, key="w_wind_v9")
             st.markdown(f"<div style='text-align: center; font-size: 1.4rem; font-weight: bold; color: #f59e0b; margin-top: 4px;'>{weight_wind} 点 / 100点</div>", unsafe_allow_html=True)
 
         with st.container(border=True):
@@ -198,7 +198,7 @@ df['score_clouds'] = np.where(
     np.maximum(0.0, weight_clouds * (1.0 - (df['雲量'] - threshold_clouds) / cloud_margin))
 )
 
-# ③ 風条件判定（下降補正モデル）
+# ③ 風条件判定（補正モデル）
 wind_speed_score = np.where(
     (df['風速'] >= min_wind) & (df['風速'] <= max_wind),
     1.0,
@@ -347,11 +347,11 @@ with tab3:
         elif row['発生予測'] == 1:
             st.success(f"🎉 **発生可能性【大】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
             if not row['wind_dir_match']:
-                st.info(f"💡 **ワンポイント**: 風向「{row['風向']}」は設定外のため風の配点が減点（30%）されていますが、温度差や晴れぐあいが非常に優れているため合格判定となりました！")
+                st.info(f"💡 **ワンポイント**: 風向「{row['風向']}」は設定外のため風の配点が減点されていますが、温度差や晴れぐあいが非常に優れているため合格判定となりました！")
         else:
             st.error(f"❄️ **発生可能性【低】** （判定スコア: {row['予測スコア']:.1f}点 / 合格点: {threshold_score}点）")
             if not row['wind_dir_match']:
-                st.info(f"💡 **おしい！**: この日の風向「**{row['風向']}**」は設定した風向きグループに含まれていないため、風のスコアが30%に下降補正されています。")
+                st.info(f"💡 **おしい！**: この日の風向「**{row['風向']}**」は設定した風向きグループに含まれていないため、風のスコアが大きく減点されています。")
             elif row['score_temp'] >= weight_temp * 0.8 and row['雲量'] > threshold_clouds:
                 st.info(f"💡 **現地観測のポイント**: 温度差（{row['温度差']:.1f}℃）や風条件は良好です！雲量は{row['雲量']}％ですが、**西の水平線ぎりぎりさえ開けていれば見られた可能性が高い日**です！")
     else:
@@ -401,7 +401,7 @@ with tab4:
         else:
             s_cloud = max(0.0, float(weight_clouds) * (1.0 - (input_cloud - threshold_clouds) / cloud_margin))
 
-        # ③ 風スコア（下降補正適用）
+        # ③ 風スコア（減点補正適用）
         if min_wind <= input_wind_speed <= max_wind:
             w_speed_score = 1.0
         elif input_wind_speed < min_wind:
@@ -432,9 +432,9 @@ with tab4:
                     st.error("🌧️ **【難しい】今日のだるま夕日指数: ★☆☆**\n設定した合格条件に届いておらず、本日だるま夕日が見られる可能性は低いです。")
 
                 if not is_input_wind_match:
-                    st.caption("※予想風向が選択された合格グループ外のため、風スコアが30%に減点補正されています。")
+                    st.caption("※予想風向が選択された合格グループ外のため、風スコアが大きく減点されています。")
 
                 with st.expander("🔍 スコアの内訳を見る"):
                     st.write(f"- 温度差スコア: **{s_temp:.1f}** / {weight_temp}点")
                     st.write(f"- 雲量スコア: **{s_cloud:.1f}** / {weight_clouds}点")
-                    st.write(f"- 風条件スコア: **{s_wind:.1f}** / {weight_wind}点 (風向適合: {'100%' if is_input_wind_match else '30%に減点'})")
+                    st.write(f"- 風条件スコア: **{s_wind:.1f}** / {weight_wind}点 (風向適合: {'適合' if is_input_wind_match else '大きく減点'})")
